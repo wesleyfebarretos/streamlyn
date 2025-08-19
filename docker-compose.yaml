@@ -1,0 +1,23 @@
+version: '3.9'
+
+volumes:
+  mongo_data:
+
+networks:
+  streamlyn:
+    driver: bridge
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: streamlyn
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - streamlyn
