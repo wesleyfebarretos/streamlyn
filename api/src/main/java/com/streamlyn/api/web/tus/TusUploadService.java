@@ -2,6 +2,7 @@ package com.streamlyn.api.web.tus;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.inputs.CreateVideoUploadInput;
+import com.streamlyn.api.domain.inputs.UploadVideoChunkInput;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
 import com.streamlyn.api.domain.services.VideoService;
 import com.streamlyn.entities.Video;
@@ -24,7 +25,6 @@ import java.util.Optional;
 @Slf4j
 public class TusUploadService {
     private final Environment env;
-    private final UploadStorageService storageService;
     private final VideoService videoService;
 
     public void protocolConfiguration(HttpServletResponse res) {
@@ -38,10 +38,20 @@ public class TusUploadService {
     public void getUploadOffset(HttpServletResponse res, String fileId) {
         TusUploadHeaderWriteService headerWriteService = new TusUploadHeaderWriteService(res, env);
         headerWriteService.writeProtocolVersion();
-        Video video = findFileById(fileId);
-        log.info("file offset retrieved for id: {}, offset = {}", video.getId(), video.getOffset());
+
+        Video video = videoService.findById(fileId).orElseThrow(() -> {
+            log.error("file with id '{}' not found", fileId);
+            return ApiException.notFound("video not found");
+        });
+
         headerWriteService.writeUploadOffset(video.getOffset());
         headerWriteService.writeNoStoreCacheControl();
+
+        if(video.getUploadLength() != null) {
+            headerWriteService.writeUploadLength(video.getUploadLength());
+        }
+
+        log.info("file offset retrieved for id: {}, offset = {}", video.getId(), video.getOffset());
     }
 
     public void createUpload(HttpServletRequest req, HttpServletResponse res) {
@@ -62,7 +72,8 @@ public class TusUploadService {
                 metadataReadService.getFileType().get(),
                 metadataReadService.getTags(),
                 metadataReadService.getDescription().orElse(null),
-                headerReadService.getUploadLength().orElse(null)
+                headerReadService.getUploadLength().orElse(null),
+                headerReadService.getMetadata().get()
         );
 
         Video video = videoService.createUpload(videoInput);
@@ -73,25 +84,24 @@ public class TusUploadService {
     private void validateRequiredMetadata(TusUploadMetadataReadService metadataService) {
         List<String> requiredFields = new ArrayList<>();
 
-        if(metadataService.getTitle().isEmpty()) {
+        if (metadataService.getTitle().isEmpty()) {
             requiredFields.add("title");
         }
 
-        if(metadataService.getFileName().isEmpty()) {
+        if (metadataService.getFileName().isEmpty()) {
             requiredFields.add("filename");
         }
 
-        if(metadataService.getFileType().isEmpty()) {
+        if (metadataService.getFileType().isEmpty()) {
             requiredFields.add("filetype");
         }
 
-        if(!requiredFields.isEmpty()) {
+        if (!requiredFields.isEmpty()) {
             throw ApiException.badRequest(String.format("missing %s in Upload-Metadata", Strings.join(requiredFields, ',')));
         }
     }
 
     public void uploadChunk(HttpServletRequest req, HttpServletResponse res, String fileId) {
-        // TODO: Move the business logic to a service
         TusUploadHeaderReadService headerReadService = new TusUploadHeaderReadService(req);
         TusUploadHeaderWriteService headerWriteService = new TusUploadHeaderWriteService(res, env);
 
@@ -100,40 +110,31 @@ public class TusUploadService {
             throw ApiException.unsupportedMediaType("Invalid Content-Type header");
         }
 
-        Video video = findFileById(fileId);
-
         Optional<Long> offset = headerReadService.getUploadOffset();
         Optional<Long> contentLength = headerReadService.getContentLength();
 
-        if(offset.isEmpty() || !offset.get().equals(video.getOffset())) {
-            throw ApiException.conflict("provided offset does not match with the current upload offset");
+        if (offset.isEmpty()) {
+            throw ApiException.conflict("missing Upload-Offset header");
         }
 
-        if(contentLength.isEmpty()) {
+        if (contentLength.isEmpty()) {
             throw ApiException.badRequest("missing Content-length header");
         }
 
-        try (InputStream inputStream = req.getInputStream()){
-            storageService.writeChunk(video.getId(), offset.get(), inputStream, contentLength.get());
+        try (InputStream inputStream = req.getInputStream()) {
+            videoService.uploadChunk(new UploadVideoChunkInput(
+                    fileId,
+                    offset.get(),
+                    inputStream,
+                    contentLength.get()
+            ));
         } catch (IOException e) {
             throw ApiException.internalServerError("failed to process upload");
         }
 
-        long newOffset = video.getOffset() + contentLength.get();
-
-        videoService.updateOffset(video.getId(), newOffset);
-
-        log.info("uploaded new chunk for upload id {}: Content-Length={}, previous offset={}, current offset={}",
-                video.getId(), contentLength.get(), offset.get(), newOffset);
+        long newOffset = offset.get() + contentLength.get();
 
         headerWriteService.writeProtocolVersion();
         headerWriteService.writeUploadOffset(newOffset);
-    }
-
-    private Video findFileById(String fileId) {
-        return videoService.findById(fileId).orElseThrow(() -> {
-            log.error("file with id '{}' not found", fileId);
-            return ApiException.notFound("video not found");
-        });
     }
 }

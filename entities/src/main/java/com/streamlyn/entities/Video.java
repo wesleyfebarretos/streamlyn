@@ -53,6 +53,8 @@ public class Video {
     @Builder.Default
     private Long dislikes = 0L;
 
+    private String metadata;
+
     @Builder.Default
     private Long commentsCount = 0L;
 

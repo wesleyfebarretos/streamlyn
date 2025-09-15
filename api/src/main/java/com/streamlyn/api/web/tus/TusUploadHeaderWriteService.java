@@ -49,6 +49,10 @@ public class TusUploadHeaderWriteService {
         res.setHeader("Upload-Offset", String.valueOf(offset));
     }
 
+    public void writeUploadLength(long length) {
+        res.setHeader("Upload-Length", String.valueOf(length));
+    }
+
     public void writeNoStoreCacheControl() {
         res.setHeader("Cache-Control", "no-store");
     }

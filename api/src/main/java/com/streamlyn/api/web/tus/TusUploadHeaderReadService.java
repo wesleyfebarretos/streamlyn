@@ -38,6 +38,10 @@ public class TusUploadHeaderReadService {
         return Optional.ofNullable(req.getHeader("Content-Type"));
     }
 
+    public Optional<String> getMetadata() {
+        return Optional.ofNullable(req.getHeader("Upload-Metadata"));
+    }
+
     private Optional<Long> headerToLong(String header) {
         return Optional.ofNullable(req.getHeader(header))
                 .map(v -> {

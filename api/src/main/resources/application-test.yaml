@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: StreamlynApi
+
+  data:
+    mongodb:
+      host: ${DB_HOST:localhost}
+      port: ${DB_PORT:27017}
+      database: ${DB_NAME:streamlyn}
+      username: ${DB_USERNAME:admin}
+      password: ${DB_PASSWORD:admin}
+      authentication-database: admin
+
+tus:
+  max-size: ${TUS_MAX_SIZE:1073741824}
+
+object-storage:
+  tmp-dir: ${OBJECT_STORAGE_TMP_DIR:/tmp}
+  output-dir: ${OBJECT_STORAGE_OUTPUT_DIR:/uploads}
+
+

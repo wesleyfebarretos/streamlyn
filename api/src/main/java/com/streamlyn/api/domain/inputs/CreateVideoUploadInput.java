@@ -18,11 +18,16 @@ public record CreateVideoUploadInput(
         @NotBlank(message = "filetype cannot be empty")
         String filetype,
 
-        List<@NotBlank(message = "tags cannot contain blank strings") String> tags,
+        List<@NotBlank(message = "tags cannot contain blank strings")
+        String> tags,
 
         @Size(max = 2000, message = "description cannot exceed 2000 characters")
         String description,
 
         @Min(value = 0, message = "uploadLength cannot be negative")
-        Long uploadLength
+        Long uploadLength,
+
+        @NotBlank(message = "metadata cannot be empty")
+        @Size(max = 3000, message = "metadata cannot exceed 3000 characters")
+        String metadata
 ) {}

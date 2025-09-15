@@ -3,8 +3,6 @@ package com.streamlyn.api.infrastructure.storages;
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +12,6 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.UUID;
 
 @Component
 @Slf4j
@@ -63,8 +60,10 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public void writeChunk(String fileId, long offset, InputStream data, long length) throws ApiException {
-        try (RandomAccessFile raf = new RandomAccessFile(tmpDir.resolve(fileId).toString(), "rw")) {
+    public long writeChunk(String fileId, long offset, InputStream data, long length) {
+        long writtenBytes = 0L;
+
+        try (RandomAccessFile raf = new RandomAccessFile(fileId, "rw")) {
             raf.seek(offset);
 
             byte[] buffer = new byte[8192];
@@ -72,19 +71,21 @@ public class FSStorageService implements UploadStorageService {
 
             while (remaining > 0) {
                 int bytesToRead = (int) Math.min(buffer.length, remaining);
-                int bytesRead = data.read(buffer, 0, bytesToRead);
+                int readedBytes = data.read(buffer, 0, bytesToRead);
 
-                if(bytesRead == -1) {
+                if(readedBytes == -1) {
                     break;
                 }
 
-                raf.write(buffer, 0, bytesRead);
-                remaining -= bytesRead;
+                raf.write(buffer, 0, readedBytes);
+                writtenBytes += readedBytes;
+                remaining -= readedBytes;
             }
         } catch (IOException e) {
             log.error("failed to write chunk: ", e);
-            throw ApiException.internalServerError("failed to write upload chunk");
         }
+
+        return writtenBytes;
     }
 
     @Override
