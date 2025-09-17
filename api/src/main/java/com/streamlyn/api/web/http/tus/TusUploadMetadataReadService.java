@@ -1,4 +1,4 @@
-package com.streamlyn.api.web.tus;
+package com.streamlyn.api.web.http.tus;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import jakarta.servlet.http.HttpServletRequest;

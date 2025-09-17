@@ -1,4 +1,4 @@
-package com.streamlyn.api.web.filters;
+package com.streamlyn.api.web.http.filters;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;

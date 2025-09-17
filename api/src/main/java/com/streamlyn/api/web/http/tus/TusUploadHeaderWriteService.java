@@ -1,4 +1,4 @@
-package com.streamlyn.api.web.tus;
+package com.streamlyn.api.web.http.tus;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

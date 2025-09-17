@@ -1,4 +1,4 @@
-package com.streamlyn.api.web.controllers.VIdeo;
+package com.streamlyn.api.web.http.controllers.VIdeo;
 
 import com.streamlyn.api.domain.services.VideoService;
 import com.streamlyn.entities.Video;

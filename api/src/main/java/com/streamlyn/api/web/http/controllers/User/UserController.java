@@ -1,4 +1,4 @@
-package com.streamlyn.api.web.controllers.User;
+package com.streamlyn.api.web.http.controllers.User;
 
 import com.streamlyn.api.domain.services.UserService;
 import com.streamlyn.entities.User;

@@ -79,7 +79,7 @@ public class VideoService {
 
         videoRepository.save(video);
 
-        log.info("new empty video created: {}", video);
+        log.info("new empty upload created: {}", video);
 
         return video;
     }

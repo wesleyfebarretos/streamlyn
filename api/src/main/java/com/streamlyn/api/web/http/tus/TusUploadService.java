@@ -1,9 +1,8 @@
-package com.streamlyn.api.web.tus;
+package com.streamlyn.api.web.http.tus;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.inputs.CreateVideoUploadInput;
 import com.streamlyn.api.domain.inputs.UploadVideoChunkInput;
-import com.streamlyn.api.domain.interfaces.UploadStorageService;
 import com.streamlyn.api.domain.services.VideoService;
 import com.streamlyn.entities.Video;
 import jakarta.servlet.http.HttpServletRequest;
