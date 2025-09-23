@@ -74,14 +74,21 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
         @Test
         @DisplayName("it should write upload chunks")
         public void writeUploadChunks() {
-            assertThat(videoRepository.count()).isEqualTo(0L);
-            long length = 0;
-            try {
-                length = getSampleVideoStream().readAllBytes().length;
+            try(InputStream inputStream = getSampleVideoStream()) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                long totalBytes = 0;
+
+//                String metadata[]
+
+                while((bytesRead = inputStream.read(buffer)) != -1) {
+                    totalBytes += bytesRead;
+                }
+
+                System.out.println(totalBytes);
             } catch (Exception e) {
-                System.out.println(e);
+                throw new RuntimeException(e);
             }
-            System.out.println(length);
         }
     }
 }

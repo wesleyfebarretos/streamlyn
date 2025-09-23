@@ -4,12 +4,7 @@ spring:
 
   data:
     mongodb:
-      host: ${DB_HOST:localhost}
-      port: ${DB_PORT:27017}
-      database: ${DB_NAME:streamlyn}
-      username: ${DB_USERNAME:admin}
-      password: ${DB_PASSWORD:admin}
-      authentication-database: admin
+      uri: mongodb://${DB_USERNAME:admin}:${DB_PASSWORD:admin}@${DB_HOST:localhost}:${DB_PORT:27017}/${DB_NAME:streamlyn}?replicaSet=${DB_REPLICA_SET:rs0}&authSource=${DB_AUTH_DB:admin}
 
 tus:
   max-size: ${TUS_MAX_SIZE:1073741824}

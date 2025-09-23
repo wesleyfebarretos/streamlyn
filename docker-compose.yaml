@@ -10,7 +10,7 @@ networks:
 services:
   mongo:
     image: mongo:8.0
-    container_name: mongodb
+    container_name: mongo
     ports:
       - "27017:27017"
     environment:
@@ -19,5 +19,29 @@ services:
       MONGO_INITDB_DATABASE: streamlyn
     volumes:
       - mongo_data:/data/db
+      - $PWD/.docker/mongo/security-key:/data/security-key
     networks:
       - streamlyn
+    entrypoint:
+      - bash
+      - -c
+      - |
+        chmod 400 /data/security-key
+        chown 999:999 /data/security-key
+        exec docker-entrypoint.sh $$@
+    command: "mongod --bind_ip_all --replSet rs0 --keyFile /data/security-key"
+
+  mongo-setup:
+    image: mongo:8.0
+    container_name: mongo-setup
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    networks:
+      - streamlyn
+    depends_on:
+      - mongo
+    volumes:
+      - $PWD/.docker/mongo/init.sh:/scripts/init.sh
+    restart: on-failure
+    entrypoint: [ "/bin/bash", "/scripts/init.sh" ]
