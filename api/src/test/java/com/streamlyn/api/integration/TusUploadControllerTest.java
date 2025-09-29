@@ -9,18 +9,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.*;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.OPTIONAL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -29,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class TusUploadControllerTest extends BaseIntegrationTest {
     private final VideoRepository videoRepository;
     private final VideoService videoService;
+    private final TestRestTemplate restTemplate;
 
     @Nested
     class VideoIngesting {
@@ -107,7 +107,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
             Video video = videoService.createUpload(videoInput);
 
-            String url = "/files/" + video.getId();
+            String path = "/files/" + video.getId();
 
             try (InputStream inputStream = getSampleVideoStream()) {
                 byte[] buffer = new byte[8192];
@@ -116,23 +116,30 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     byte[] chunk = Arrays.copyOf(buffer, bytesRead);
-                    mockMvc.perform(
-                                    put(url)
-                                            .header("Content-Type", "application/offset+octet-stream")
-                                            .header("Content-Length", bytesRead)
-                                            .header("Tus-Resumable", "1.0.0")
-                                            .header("Upload-Offset", offset)
-                                            .content(chunk)
-                            )
-                            .andDo(print())
-//                            .andExpect(status().isCreated())
-//                            .andExpect(header().exists("Location"))
-//                            .andExpect(header().exists("Tus-Resumable"))
-//                            .andExpect(header().string("Tus-Resumable", "1.0.0"))
-                            .andReturn();
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.add("Content-Type", "application/offset+octet-stream");
+                    headers.add("Content-Length", String.valueOf(bytesRead));
+                    headers.add("Tus-Resumable", "1.0.0");
+                    headers.add("Upload-Offset", String.valueOf(offset));
+
+                    HttpEntity<byte[]> requestEntity = new HttpEntity<>(chunk, headers);
+
+                    ResponseEntity<Void> response = restTemplate.exchange(path, HttpMethod.PATCH, requestEntity, Void.class);
+
+                    assertThat(response .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+                    assertThat(response.getHeaders().get("upload-offset")).isNotEmpty();
+
+                    Optional<String> uploadOffset = Optional.ofNullable(response.getHeaders().getFirst("upload-offset"));
+
+                    assertThat(uploadOffset).isPresent();
+                    assertThat(uploadOffset.get()).isEqualTo(Long.toString(bytesRead + offset));
+                    assertThat(response.getHeaders().getFirst("tus-resumable")).isEqualTo("1.0.0");
 
                     offset += bytesRead;
                 }
+
+                assertThat(videoRepository.findAll()).size().isEqualTo(1);
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
