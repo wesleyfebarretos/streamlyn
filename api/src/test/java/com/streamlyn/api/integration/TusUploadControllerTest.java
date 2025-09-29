@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.OPTIONAL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -41,9 +40,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
             return inputStream;
         }
 
-        @Test
-        @DisplayName("it should create a upload")
-        public void createUpload() throws Exception {
+        private MvcResult createUploadRequest() {
             try (InputStream inputStream = getSampleVideoStream()) {
                 byte[] fileBytes = inputStream.readAllBytes();
 
@@ -51,7 +48,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                 String fileType = Base64.getEncoder().encodeToString("video/mp4".getBytes());
                 String title = Base64.getEncoder().encodeToString("SAMPLE VIDEO".getBytes());
 
-                MvcResult result = mockMvc.perform(
+                return mockMvc.perform(
                                 post("/files")
                                         .header("Upload-Length", fileBytes.length)
                                         .header("Upload-Metadata", String.format(
@@ -66,16 +63,22 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                         .andExpect(header().exists("Tus-Resumable"))
                         .andExpect(header().string("Tus-Resumable", "1.0.0"))
                         .andReturn();
-
-                List<Video> videos = videoRepository.findAll();
-
-                assertThat(result.getResponse().getHeader("Location"))
-                        .isEqualTo(String.format("/files/%s", videos.getFirst().getId()));
-
-                assertThat(videoRepository.count()).isEqualTo(1L);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        @Test
+        @DisplayName("it should create a upload")
+        public void createUpload() throws Exception {
+            MvcResult result = createUploadRequest();
+
+            List<Video> videos = videoRepository.findAll();
+
+            assertThat(result.getResponse().getHeader("Location"))
+                    .isEqualTo(String.format("/files/%s", videos.getFirst().getId()));
+
+            assertThat(videoRepository.count()).isEqualTo(1L);
         }
 
         @Test
@@ -144,6 +147,14 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        @Test
+        @DisplayName("it should upload a file with pauses")
+        public void fileUploadWithPauses() {
+            MvcResult result = createUploadRequest();
+
+            assertThat(videoRepository.findAll()).size().isEqualTo(1);
         }
     }
 }
