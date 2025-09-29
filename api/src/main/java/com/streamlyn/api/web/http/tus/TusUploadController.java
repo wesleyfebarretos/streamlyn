@@ -24,7 +24,11 @@ public class TusUploadController {
         tusUploadService.createUpload(req, res);
     }
 
-    @RequestMapping(method = RequestMethod.PATCH, path = "{fileId}")
+    @RequestMapping(
+            method = RequestMethod.PATCH,
+            path = "{fileId}",
+            consumes = "application/offset+octet-stream"
+    )
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void uploadChunk(HttpServletRequest req, HttpServletResponse res, @PathVariable String fileId) {
         tusUploadService.uploadChunk(req, res, fileId);

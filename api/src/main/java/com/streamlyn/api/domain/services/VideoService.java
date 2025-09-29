@@ -13,7 +13,6 @@ import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -43,7 +42,6 @@ public class VideoService {
         return videoRepository.findById(id);
     }
 
-    @Transactional
     public Video createUpload(@Valid CreateVideoUploadInput videoInput) {
         if (videoInput.uploadLength() != null && videoInput.uploadLength() > FILE_MAX_SIZE) {
             throw ApiException.payloadTooLarge("max file size exceeded");
@@ -84,7 +82,6 @@ public class VideoService {
         return video;
     }
 
-    @Transactional
     public void uploadChunk(@Valid UploadVideoChunkInput input) {
         Video video = videoRepository.findById(input.fileId())
                 .orElseThrow(() -> ApiException.notFound("video not found"));
