@@ -3,14 +3,18 @@ package com.streamlyn.api.infrastructure.storages;
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 @Component
@@ -20,8 +24,8 @@ public class FSStorageService implements UploadStorageService {
     private final Path outputDir;
 
     public FSStorageService(
-            @Value("${object-storage.tmp-dir}") String tmpDir,
-            @Value("${object-storage.output-dir}") String outputDir
+        @Value("${object-storage.tmp-dir}") String tmpDir,
+        @Value("${object-storage.output-dir}") String outputDir
     ) throws ApiException {
         String cwd = System.getProperty("user.dir");
         this.tmpDir = Path.of(cwd, tmpDir);
@@ -63,6 +67,10 @@ public class FSStorageService implements UploadStorageService {
     public long writeChunk(String fileId, long offset, InputStream data, long length) {
         long writtenBytes = 0L;
 
+        if(!Files.exists(Path.of(fileId))) {
+            throw ApiException.notFound("failed to write chunk, target file was not found");
+        }
+
         try (RandomAccessFile raf = new RandomAccessFile(fileId, "rw")) {
             raf.seek(offset);
 
@@ -90,5 +98,17 @@ public class FSStorageService implements UploadStorageService {
 
     @Override
     public void finalizeUpload(String fileId) throws ApiException {
+        Path sourcePath = tmpDir.resolve(fileId);
+        Path targetPath = outputDir.resolve(new File(fileId).getName());
+
+        if(!Files.exists(sourcePath)) {
+            throw ApiException.notFound("failed to finalize upload, source file was not found");
+        }
+
+        try {
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.error("failed to moving file to final directory: ", e);
+        }
     }
 }
