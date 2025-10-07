@@ -2,20 +2,22 @@ package com.streamlyn.api.infrastructure.storages;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
-import io.awspring.cloud.s3.S3Template;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.InputStream;
 
-@Component
+@Service
 @Slf4j
+@Primary
 @RequiredArgsConstructor
 public class S3Service implements UploadStorageService {
-    private final S3Template s3Template;
+    private final S3Client s3Client;
 
     @Value("${object-storage.bucket}")
     private String BUCKET;
@@ -41,6 +43,6 @@ public class S3Service implements UploadStorageService {
 
     @Scheduled(cron = "* * * * * *")
     public void teste() {
-        s3Template.bucketExists(BUCKET);
+        System.out.println(s3Client.listBuckets());
     }
 }

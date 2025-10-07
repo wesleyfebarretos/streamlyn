@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILE:local}
   application:
     name: StreamlynApi
 
@@ -7,12 +9,13 @@ spring:
       uri: mongodb://${DB_USERNAME:admin}:${DB_PASSWORD:admin}@${DB_HOST:localhost}:${DB_PORT:27017}/${DB_NAME:streamlyn}?replicaSet=${DB_REPLICA_SET:rs0}&authSource=${DB_AUTH_DB:admin}
 
   cloud:
+    config:
+      enabled: false
     aws:
       region:
         static: ${AWS_REGION:us-east-1}
       s3:
-        endpoint: http://localhost:9000
-        path-style-access-enabled: true
+        bucket: ${OBJECT_STORAGE_BUCKET:streamlyn}
 
 tus:
   max-size: ${TUS_MAX_SIZE:1073741824}
