@@ -1,6 +1,7 @@
 package com.streamlyn.api.domain.services;
 
 import com.streamlyn.api.domain.exception.ApiException;
+import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.inputs.CreateVideoUploadInput;
 import com.streamlyn.api.domain.inputs.UploadVideoChunkInput;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
@@ -108,19 +109,14 @@ public class VideoService {
         }
 
         long writtenBytes = 0;
+
         String filePath = String.format("%s%s", video.getId(), extension);
 
-        try (InputStream is = input.data()) {
-            byte[] chunk = new byte[5 * 1024 * 1024];
-            int bytesRead;
-
-            while ((bytesRead = is.read(chunk)) != -1) {
-                storageService.uploadPart(filePath, chunk, bytesRead);
-                writtenBytes += bytesRead;
-            }
-
-        } catch (IOException e) {
-            throw ApiException.internalServerError("could not write all bytes of the request");
+        try {
+            writtenBytes = storageService.uploadPart(filePath, input.data());
+        } catch (MultiPartUploadException e) {
+            writtenBytes = e.getWrittenBytes();
+            throw ApiException.internalServerError(e.getMessage());
         } finally {
             video.setOffset(video.getOffset() + writtenBytes);
 
