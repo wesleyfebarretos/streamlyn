@@ -5,9 +5,9 @@ import com.streamlyn.api.domain.exception.ApiException;
 import java.io.InputStream;
 
 public interface UploadStorageService {
-    String createUpload(String fileId) throws ApiException;
-    InputStream getInputStream(String fileId) throws ApiException;
-    long writeChunk(String fileId, long offset, InputStream data, long length) throws ApiException;
-    void finalizeUpload(String fileId) throws ApiException;
+    String upload(String filePath, byte[] data);
+    void startMultiPartUpload(String filePath) throws ApiException;
+    void uploadPart(String filePath, byte[] chunk, int length) throws ApiException;
+    String completeMultiPartUpload(String filePath) throws ApiException;
 }
 

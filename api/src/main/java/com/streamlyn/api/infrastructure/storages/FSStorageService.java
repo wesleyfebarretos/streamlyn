@@ -3,19 +3,13 @@ package com.streamlyn.api.infrastructure.storages;
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 
 @Component
 @Slf4j
@@ -59,15 +53,10 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public InputStream getInputStream(String fileId) throws ApiException {
-        return null;
-    }
-
-    @Override
     public long writeChunk(String fileId, long offset, InputStream data, long length) {
         long writtenBytes = 0L;
 
-        if(!Files.exists(Path.of(fileId))) {
+        if (!Files.exists(Path.of(fileId))) {
             throw ApiException.notFound("failed to write chunk, target file was not found");
         }
 
@@ -81,7 +70,7 @@ public class FSStorageService implements UploadStorageService {
                 int bytesToRead = (int) Math.min(buffer.length, remaining);
                 int readedBytes = data.read(buffer, 0, bytesToRead);
 
-                if(readedBytes == -1) {
+                if (readedBytes == -1) {
                     break;
                 }
 
@@ -97,11 +86,11 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public void finalizeUpload(String fileId) throws ApiException {
+    public void completeUpload(String fileId) throws ApiException {
         Path sourcePath = tmpDir.resolve(fileId);
         Path targetPath = outputDir.resolve(new File(fileId).getName());
 
-        if(!Files.exists(sourcePath)) {
+        if (!Files.exists(sourcePath)) {
             throw ApiException.notFound("failed to finalize upload, source file was not found");
         }
 
@@ -110,5 +99,56 @@ public class FSStorageService implements UploadStorageService {
         } catch (IOException e) {
             log.error("failed to moving file to final directory: ", e);
         }
+    }
+
+    @Override
+    public String upload(String filePath, byte[] data) {
+        return "";
+    }
+
+    @Override
+    public void startMultiPartUpload(String filePath) throws ApiException {
+        try {
+            Path file = tmpDir.resolve(filePath);
+
+            if (Files.notExists(file.getParent())) {
+                Files.createDirectories(file.getParent());
+            }
+
+            Files.createFile(file);
+            log.info("upload created with path: {}", filePath);
+        } catch (IOException e) {
+            throw ApiException.internalServerError("Failed to create file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void uploadPart(String filePath, byte[] chunk, int length) throws ApiException {
+        if (!Files.exists(tmpDir.resolve(filePath))) {
+            throw ApiException.notFound("failed to upload part, file path was not found");
+        }
+
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpDir.resolve(filePath).toFile(), true))) {
+            bos.write(chunk, 0, length);
+        } catch (IOException e) {
+            log.error("failed to write chunk: ", e);
+        }
+    }
+
+    @Override
+    public String completeMultiPartUpload(String filePath) throws ApiException {
+        Path sourcePath = tmpDir.resolve(filePath);
+        Path targetPath = outputDir.resolve(filePath);
+
+        if (!Files.exists(sourcePath)) {
+            throw ApiException.notFound("failed to finalize upload, as not found");
+        }
+
+        try {
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.error("failed to moving file to final directory: ", e);
+        }
+        return "";
     }
 }
