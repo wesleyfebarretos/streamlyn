@@ -6,23 +6,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @Slf4j
-@Primary
 @RequiredArgsConstructor
+@Primary
 public class S3Service implements UploadStorageService {
     private final S3Client s3Client;
     // TODO: Remove this test variable
@@ -37,31 +32,31 @@ public class S3Service implements UploadStorageService {
     private String BUCKET;
 
 
-    @Scheduled(cron = "* * * * * *")
-    public void teste() {
-        String home = System.getProperty("user.home");
-        File file = new File(home + "/Downloads/test-video.mp4");
-        String filePath = "teste/test-video.mp4";
-
-        startMultiPartUpload(filePath);
-
-        try(InputStream inputStream = new FileInputStream(file)) {
-
-            byte[] buffer = new byte[5 * 1024 * 1024];
-            int bytesRead;
-
-            while((bytesRead = inputStream.read(buffer)) != -1) {
-                uploadPart(filePath, buffer, bytesRead);
-            }
-        } catch (IOException e) {
-            log.error("failed to write chunk: ", e);
-        }
-
-        completeMultiPartUpload(filePath);
-    }
+//    @Scheduled(cron = "* * * * * *")
+//    public void teste() {
+//        String home = System.getProperty("user.home");
+//        File file = new File(home + "/Downloads/test-video.mp4");
+//        String filePath = "teste/test-video.mp4";
+//
+//        startMultiPartUpload(filePath);
+//
+//        try(InputStream inputStream = new FileInputStream(file)) {
+//
+//            byte[] buffer = new byte[5 * 1024 * 1024];
+//            int bytesRead;
+//
+//            while((bytesRead = inputStream.read(buffer)) != -1) {
+//                uploadPart(filePath, buffer, bytesRead);
+//            }
+//        } catch (IOException e) {
+//            log.error("failed to write chunk: ", e);
+//        }
+//
+//        completeMultiPartUpload(filePath);
+//    }
 
     @Override
-    public String upload(String filePath, byte[] data) {
+    public String upload(String filePath, byte[] buffer) {
         return "";
     }
 

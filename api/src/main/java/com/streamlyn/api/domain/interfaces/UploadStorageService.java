@@ -5,7 +5,7 @@ import com.streamlyn.api.domain.exception.ApiException;
 import java.io.InputStream;
 
 public interface UploadStorageService {
-    String upload(String filePath, byte[] data);
+    String upload(String filePath, byte[] buffer);
     void startMultiPartUpload(String filePath) throws ApiException;
     void uploadPart(String filePath, byte[] chunk, int length) throws ApiException;
     String completeMultiPartUpload(String filePath) throws ApiException;

@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,74 +45,94 @@ public class VideoService {
     }
 
     public Video createUpload(@Valid CreateVideoUploadInput videoInput) {
-//        if (videoInput.uploadLength() != null && videoInput.uploadLength() > FILE_MAX_SIZE) {
-//            throw ApiException.payloadTooLarge("max file size exceeded");
-//        }
-//
-//        String extension = "";
-//
-//        try {
-//            extension = MimeTypes.getDefaultMimeTypes()
-//                    .forName(videoInput.filetype()).getExtension();
-//
-//            if (extension.isBlank()) {
-//                throw ApiException.badRequest("invalid filetype: " + videoInput.filetype());
-//            }
-//        } catch (MimeTypeException e) {
-//            throw ApiException.badRequest(e.getMessage());
-//        }
-//
-//        Video video = Video.builder()
-//                .title(videoInput.title())
-//                .mimeType(videoInput.filetype())
-//                .fileName(videoInput.filename())
-//                .tags(videoInput.tags())
-//                .description(videoInput.description())
-//                .uploadLength(videoInput.uploadLength())
-//                .metadata(videoInput.metadata())
-//                .offset(0L)
-//                .build();
-//
-//        save(video);
-//
-//        video.setFileUrl(storageService.createUpload(String.format("%s%s", video.getId(), extension)));
-//
-//        videoRepository.save(video);
-//
-//        log.info("new empty upload created: {}", video);
-//
-//        return video;
-        return Video.builder().build();
+        if (videoInput.uploadLength() != null && videoInput.uploadLength() > FILE_MAX_SIZE) {
+            throw ApiException.payloadTooLarge("max file size exceeded");
+        }
+
+        String extension = "";
+
+        try {
+            extension = MimeTypes.getDefaultMimeTypes()
+                    .forName(videoInput.filetype())
+                    .getExtension();
+
+            if (extension.isBlank()) {
+                throw ApiException.badRequest("invalid filetype: " + videoInput.filetype());
+            }
+        } catch (MimeTypeException e) {
+            throw ApiException.badRequest(e.getMessage());
+        }
+
+        Video video = Video.builder()
+                .title(videoInput.title())
+                .mimeType(videoInput.filetype())
+                .fileName(videoInput.filename())
+                .tags(videoInput.tags())
+                .description(videoInput.description())
+                .uploadLength(videoInput.uploadLength())
+                .metadata(videoInput.metadata())
+                .offset(0L)
+                .build();
+
+        save(video);
+
+        storageService.startMultiPartUpload(String.format("%s%s", video.getId(), extension));
+
+        videoRepository.save(video);
+
+        log.info("new empty upload created: {}", video);
+
+        return video;
     }
 
     public void uploadChunk(@Valid UploadVideoChunkInput input) {
-//        Video video = videoRepository.findById(input.fileId())
-//                .orElseThrow(() -> ApiException.notFound("video not found"));
-//
-//        if (input.offset() != video.getOffset()) {
-//            throw ApiException.conflict("provided offset does not match with the current upload offset");
-//        }
-//
-//        if (video.getOffset().equals(video.getUploadLength())) {
-//            throw ApiException.conflict("The file has already been uploaded");
-//        }
-//
-//        long writtenBytes = storageService.writeChunk(video.getFileUrl(), input.offset(), input.data(), input.contentLength());
-//
-//        long newOffset = video.getOffset() + writtenBytes;
-//        video.setOffset(newOffset);
-//
-//        videoRepository.save(video);
-//
-//        if (newOffset == video.getUploadLength()) {
-//            storageService.completeUpload(video.getFileUrl());
-//        }
-//
-//        log.info("uploaded new chunk for upload id {}: Content-Length={}, previous offset={}, current offset={}, upload length={}",
-//                video.getId(), input.contentLength(), input.offset(), newOffset, video.getUploadLength());
-//
-//        if(writtenBytes != input.contentLength()) {
-//            throw ApiException.internalServerError("could not write all bytes of the request");
-//        }
+        Video video = videoRepository.findById(input.fileId())
+                .orElseThrow(() -> ApiException.notFound("video not found"));
+
+        if (input.offset() != video.getOffset()) {
+            throw ApiException.conflict("provided offset does not match with the current upload offset");
+        }
+
+        if (video.getOffset().equals(video.getUploadLength())) {
+            throw ApiException.conflict("The file has already been uploaded");
+        }
+
+        String extension;
+
+        try {
+            extension = MimeTypes.getDefaultMimeTypes()
+                    .forName(video.getMimeType())
+                    .getExtension();
+        } catch (MimeTypeException e) {
+            throw ApiException.unsupportedMediaType(String.format("invalid video mimetype: %s.", video.getMimeType()));
+        }
+
+        long writtenBytes = 0;
+        String filePath = String.format("%s%s", video.getId(), extension);
+
+        try (InputStream is = input.data()) {
+            byte[] chunk = new byte[5 * 1024 * 1024];
+            int bytesRead;
+
+            while ((bytesRead = is.read(chunk)) != -1) {
+                storageService.uploadPart(filePath, chunk, bytesRead);
+                writtenBytes += bytesRead;
+            }
+
+        } catch (IOException e) {
+            throw ApiException.internalServerError("could not write all bytes of the request");
+        } finally {
+            video.setOffset(video.getOffset() + writtenBytes);
+            videoRepository.save(video);
+        }
+
+
+        if (video.getOffset().equals(video.getUploadLength())) {
+            video.setFileUrl(storageService.completeMultiPartUpload(filePath));
+            videoRepository.save(video);
+        }
+
+        log.info("uploaded new chunk for upload id {}: Content-Length={}, previous offset={}, current offset={}, upload length={}",
+                video.getId(), input.contentLength(), input.offset(), video.getOffset(), video.getUploadLength());
     }
 }

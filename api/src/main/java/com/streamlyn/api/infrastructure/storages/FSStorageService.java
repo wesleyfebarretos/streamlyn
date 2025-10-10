@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -40,69 +42,7 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public String createUpload(String fileId) throws ApiException {
-        try {
-            Path filePath = tmpDir.resolve(fileId);
-            Files.createFile(filePath);
-            log.info("upload created with id {}", fileId);
-            return filePath.toString();
-        } catch (IOException e) {
-            log.error("failed to create file");
-            throw ApiException.internalServerError("Failed to create file: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public long writeChunk(String fileId, long offset, InputStream data, long length) {
-        long writtenBytes = 0L;
-
-        if (!Files.exists(Path.of(fileId))) {
-            throw ApiException.notFound("failed to write chunk, target file was not found");
-        }
-
-        try (RandomAccessFile raf = new RandomAccessFile(fileId, "rw")) {
-            raf.seek(offset);
-
-            byte[] buffer = new byte[8192];
-            long remaining = length;
-
-            while (remaining > 0) {
-                int bytesToRead = (int) Math.min(buffer.length, remaining);
-                int readedBytes = data.read(buffer, 0, bytesToRead);
-
-                if (readedBytes == -1) {
-                    break;
-                }
-
-                raf.write(buffer, 0, readedBytes);
-                writtenBytes += readedBytes;
-                remaining -= readedBytes;
-            }
-        } catch (IOException e) {
-            log.error("failed to write chunk: ", e);
-        }
-
-        return writtenBytes;
-    }
-
-    @Override
-    public void completeUpload(String fileId) throws ApiException {
-        Path sourcePath = tmpDir.resolve(fileId);
-        Path targetPath = outputDir.resolve(new File(fileId).getName());
-
-        if (!Files.exists(sourcePath)) {
-            throw ApiException.notFound("failed to finalize upload, source file was not found");
-        }
-
-        try {
-            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            log.error("failed to moving file to final directory: ", e);
-        }
-    }
-
-    @Override
-    public String upload(String filePath, byte[] data) {
+    public String upload(String filePath, byte[] buffer) {
         return "";
     }
 
@@ -140,15 +80,21 @@ public class FSStorageService implements UploadStorageService {
         Path sourcePath = tmpDir.resolve(filePath);
         Path targetPath = outputDir.resolve(filePath);
 
-        if (!Files.exists(sourcePath)) {
+
+        if (Files.notExists(sourcePath)) {
             throw ApiException.notFound("failed to finalize upload, as not found");
         }
 
         try {
+            if(Files.notExists(targetPath.getParent())) {
+                Files.createDirectories(targetPath.getParent());
+            }
+
             Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             log.error("failed to moving file to final directory: ", e);
         }
-        return "";
+
+        return targetPath.toString();
     }
 }
