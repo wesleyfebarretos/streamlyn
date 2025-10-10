@@ -1,6 +1,7 @@
 package com.streamlyn.api.infrastructure.storages;
 
 import com.streamlyn.api.domain.exception.ApiException;
+import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,9 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +60,7 @@ public class S3Service implements UploadStorageService {
 //    }
 
     @Override
-    public String upload(String filePath, byte[] buffer) {
+    public String upload(String filePath, InputStream is) {
         return "";
     }
 
@@ -71,28 +75,45 @@ public class S3Service implements UploadStorageService {
     }
 
     @Override
-    public void uploadPart(String filePath, byte[] chunk, int length) throws ApiException {
-        // TODO: Remove test variable and implement redis to atomic inc based in filepath key
-        partNumber++;
+    public long uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException {
+        long writtenBytes = 0;
 
-        UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
-                .bucket(BUCKET)
-                .key(filePath)
-                .uploadId(uploadId)
-                .partNumber(partNumber)
-                .build();
+        try (InputStream is = inputStream) {
+            // TODO: Remove test variable and implement redis to atomic inc based in filepath key
+            byte[] buffer = new byte[10 * 1024 * 1024];
+            int bytesRead;
 
-        UploadPartResponse partResponse = s3Client.uploadPart(
-                uploadPartRequest,
-                RequestBody.fromBytes(chunk));
+            while ((bytesRead = is.read(buffer)) != -1) {
+                partNumber++;
 
-        CompletedPart part = CompletedPart.builder()
-                .partNumber(partNumber)
-                .eTag(partResponse.eTag())
-                .build();
+                UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+                        .bucket(BUCKET)
+                        .key(filePath)
+                        .uploadId(uploadId)
+                        .partNumber(partNumber)
+                        .build();
 
-        // TODO: Remove this test variable and add this metadata to redis
-        completedParts.add(part);
+                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead);
+
+                UploadPartResponse partResponse = s3Client.uploadPart(
+                        uploadPartRequest,
+                        RequestBody.fromByteBuffer(byteBuffer));
+
+                CompletedPart part = CompletedPart.builder()
+                        .partNumber(partNumber)
+                        .eTag(partResponse.eTag())
+                        .build();
+
+                // TODO: Remove this test variable and add this metadata to redis
+                completedParts.add(part);
+
+                writtenBytes += bytesRead;
+            }
+        } catch (IOException e) {
+            throw new MultiPartUploadException("could not write all requested bytes", e, writtenBytes);
+        }
+
+        return writtenBytes;
     }
 
     @Override

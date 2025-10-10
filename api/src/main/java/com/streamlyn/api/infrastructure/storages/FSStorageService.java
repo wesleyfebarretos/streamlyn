@@ -1,6 +1,7 @@
 package com.streamlyn.api.infrastructure.storages;
 
 import com.streamlyn.api.domain.exception.ApiException;
+import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.interfaces.UploadStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -42,7 +45,7 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public String upload(String filePath, byte[] buffer) {
+    public String upload(String filePath, InputStream is) {
         return "";
     }
 
@@ -63,16 +66,26 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public void uploadPart(String filePath, byte[] chunk, int length) throws ApiException {
+    public long uploadPart(String filePath, InputStream is) throws MultiPartUploadException {
         if (!Files.exists(tmpDir.resolve(filePath))) {
             throw ApiException.notFound("failed to upload part, file path was not found");
         }
 
+        long writtenBytes = 0;
+
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpDir.resolve(filePath).toFile(), true))) {
-            bos.write(chunk, 0, length);
+            byte[] buffer = new byte[10 * 1024 * 1024];
+            int bytesRead;
+
+            while((bytesRead = is.read(buffer)) != -1) {
+                bos.write(buffer, 0, bytesRead);
+                writtenBytes += bytesRead;
+            }
         } catch (IOException e) {
-            log.error("failed to write chunk: ", e);
+            throw new MultiPartUploadException("could not write all requested bytes", e, writtenBytes);
         }
+
+        return writtenBytes;
     }
 
     @Override

@@ -44,7 +44,7 @@ public class VideoService {
         return videoRepository.findById(id);
     }
 
-    public Video createUpload(@Valid CreateVideoUploadInput videoInput) {
+    public Video startMultiPartUpload(@Valid CreateVideoUploadInput videoInput) {
         if (videoInput.uploadLength() != null && videoInput.uploadLength() > FILE_MAX_SIZE) {
             throw ApiException.payloadTooLarge("max file size exceeded");
         }
@@ -85,7 +85,7 @@ public class VideoService {
         return video;
     }
 
-    public void uploadChunk(@Valid UploadVideoChunkInput input) {
+    public void uploadPart(@Valid UploadVideoChunkInput input) {
         Video video = videoRepository.findById(input.fileId())
                 .orElseThrow(() -> ApiException.notFound("video not found"));
 
@@ -123,12 +123,11 @@ public class VideoService {
             throw ApiException.internalServerError("could not write all bytes of the request");
         } finally {
             video.setOffset(video.getOffset() + writtenBytes);
-            videoRepository.save(video);
-        }
 
+            if (video.getOffset().equals(video.getUploadLength())) {
+                video.setFileUrl(storageService.completeMultiPartUpload(filePath));
+            }
 
-        if (video.getOffset().equals(video.getUploadLength())) {
-            video.setFileUrl(storageService.completeMultiPartUpload(filePath));
             videoRepository.save(video);
         }
 

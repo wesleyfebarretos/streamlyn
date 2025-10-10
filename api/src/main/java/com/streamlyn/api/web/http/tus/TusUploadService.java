@@ -75,7 +75,7 @@ public class TusUploadService {
                 headerReadService.getMetadata().get()
         );
 
-        Video video = videoService.createUpload(videoInput);
+        Video video = videoService.startMultiPartUpload(videoInput);
 
         headerWriteService.writeLocation("/files/" + video.getId());
     }
@@ -121,7 +121,7 @@ public class TusUploadService {
         }
 
         try (InputStream inputStream = req.getInputStream()) {
-            videoService.uploadChunk(new UploadVideoChunkInput(
+            videoService.uploadPart(new UploadVideoChunkInput(
                     fileId,
                     offset.get(),
                     inputStream,

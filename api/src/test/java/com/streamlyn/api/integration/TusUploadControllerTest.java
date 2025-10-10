@@ -139,7 +139,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                     )
             );
 
-            Video video = videoService.createUpload(videoInput);
+            Video video = videoService.startMultiPartUpload(videoInput);
 
             String path = "/files/" + video.getId();
 
