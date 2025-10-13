@@ -22,16 +22,18 @@ services:
       MONGO_INITDB_DATABASE: streamlyn
     volumes:
       - mongo_data:/data/db
-      - $PWD/.docker/mongo/security-key:/data/security-key
     networks:
       - streamlyn
     entrypoint:
       - bash
       - -c
       - |
-        chmod 400 /data/security-key
-        chown 999:999 /data/security-key
-        exec docker-entrypoint.sh $$@
+        if [ ! -f /data/security-key ]; then
+          openssl rand -base64 756 > /data/security-key
+          chmod 400 /data/security-key
+          chown 999:999 /data/security-key
+        fi
+        exec docker-entrypoint.sh "$@"
     command: "mongod --bind_ip_all --replSet rs0 --keyFile /data/security-key"
 
   mongo-setup:

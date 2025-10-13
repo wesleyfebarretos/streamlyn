@@ -1,7 +1,5 @@
 #!/bin/bash
 
-openssl rand -base64 756 > ./security-key
-
 m1=mongo
 port=${PORT:-27017}
 user=${MONGO_INITDB_ROOT_USERNAME:-admin}

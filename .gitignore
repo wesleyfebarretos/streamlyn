@@ -35,5 +35,4 @@ build/
 ### Project ###
 tmp
 uploads
-
 .docker/mongo/security-key
