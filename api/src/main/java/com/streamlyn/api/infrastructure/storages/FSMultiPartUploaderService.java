@@ -2,7 +2,7 @@ package com.streamlyn.api.infrastructure.storages;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.exception.MultiPartUploadException;
-import com.streamlyn.api.domain.interfaces.UploadStorageService;
+import com.streamlyn.api.domain.interfaces.ObjectStorageMultiPartUploaderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -11,18 +11,21 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 @Component
 @Slf4j
-public class FSStorageService implements UploadStorageService {
+public class FSMultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
     private final Path tmpDir;
     private final Path outputDir;
 
-    public FSStorageService(
+    private final long MIN_PART_SIZE = 256 * 1024;
+    private final int MAX_UPLOAD_PARTS = Integer.MAX_VALUE;
+
+
+    public FSMultiPartUploaderService(
         @Value("${object-storage.tmp-dir}") String tmpDir,
         @Value("${object-storage.output-dir}") String outputDir
     ) throws ApiException {
@@ -45,12 +48,7 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public String upload(String filePath, InputStream is) {
-        return "";
-    }
-
-    @Override
-    public void startMultiPartUpload(String filePath) throws ApiException {
+    public void start(String filePath) throws ApiException {
         try {
             Path file = tmpDir.resolve(filePath);
 
@@ -89,7 +87,7 @@ public class FSStorageService implements UploadStorageService {
     }
 
     @Override
-    public String completeMultiPartUpload(String filePath) throws ApiException {
+    public String complete(String filePath) throws ApiException {
         Path sourcePath = tmpDir.resolve(filePath);
         Path targetPath = outputDir.resolve(filePath);
 
@@ -109,5 +107,15 @@ public class FSStorageService implements UploadStorageService {
         }
 
         return targetPath.toString();
+    }
+
+    @Override
+    public long minPartSize() {
+        return MIN_PART_SIZE;
+    }
+
+    @Override
+    public long minPartSizeOf(long uploadSize) {
+        return Math.max(MIN_PART_SIZE, uploadSize / MAX_UPLOAD_PARTS);
     }
 }

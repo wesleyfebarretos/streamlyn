@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("files")
+@RequestMapping("videos")
 public class TusUploadController {
     private final TusUploadService tusUploadService;
 
@@ -26,16 +26,16 @@ public class TusUploadController {
 
     @RequestMapping(
             method = RequestMethod.PATCH,
-            path = "{fileId}",
+            path = "{videoId}",
             consumes = "application/offset+octet-stream"
     )
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void uploadChunk(HttpServletRequest req, HttpServletResponse res, @PathVariable String fileId) {
-        tusUploadService.uploadChunk(req, res, fileId);
+    public void uploadChunk(HttpServletRequest req, HttpServletResponse res, @PathVariable String videoId) {
+        tusUploadService.uploadChunk(req, res, videoId);
     }
 
-    @RequestMapping(method = RequestMethod.HEAD, path = "{fileId}")
-    public void getOffset(HttpServletResponse res, @PathVariable String fileId) {
-        tusUploadService.getUploadOffset(res, fileId);
+    @RequestMapping(method = RequestMethod.HEAD, path = "{videoId}")
+    public void getOffset(HttpServletResponse res, @PathVariable String videoId) {
+        tusUploadService.getUploadOffset(res, videoId);
     }
 }

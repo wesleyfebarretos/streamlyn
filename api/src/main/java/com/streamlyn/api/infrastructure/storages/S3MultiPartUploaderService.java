@@ -2,7 +2,7 @@ package com.streamlyn.api.infrastructure.storages;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.exception.MultiPartUploadException;
-import com.streamlyn.api.domain.interfaces.UploadStorageService;
+import com.streamlyn.api.domain.interfaces.ObjectStorageMultiPartUploaderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,8 +22,10 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @Primary
-public class S3Service implements UploadStorageService {
+public class S3MultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
     private final S3Client s3Client;
+    private final long MIN_PART_SIZE = 5 * 1024 * 1024;
+    private final int MAX_UPLOAD_PARTS = 10000;
     // TODO: Remove this test variable
     private String uploadId;
     // TODO: Remove this test variable
@@ -59,13 +61,9 @@ public class S3Service implements UploadStorageService {
 //        completeMultiPartUpload(filePath);
 //    }
 
-    @Override
-    public String upload(String filePath, InputStream is) {
-        return "";
-    }
 
     @Override
-    public void startMultiPartUpload(String filePath) throws ApiException {
+    public void start(String filePath) throws ApiException {
         CreateMultipartUploadResponse createMultipartUploadResponse = s3Client.createMultipartUpload(b -> b
                 .bucket(BUCKET)
                 .key(filePath));
@@ -117,7 +115,7 @@ public class S3Service implements UploadStorageService {
     }
 
     @Override
-    public String completeMultiPartUpload(String filePath) throws ApiException {
+    public String complete(String filePath) throws ApiException {
         CompleteMultipartUploadResponse res = s3Client.completeMultipartUpload(b -> b
                 .bucket(BUCKET)
                 .key(filePath)
@@ -125,5 +123,15 @@ public class S3Service implements UploadStorageService {
                 .multipartUpload(CompletedMultipartUpload.builder().parts(completedParts).build()));
 
         return res.location();
+    }
+
+    @Override
+    public long minPartSize() {
+        return MIN_PART_SIZE;
+    }
+
+    @Override
+    public long minPartSizeOf(long uploadSize) {
+        return Math.max(MIN_PART_SIZE, uploadSize / MAX_UPLOAD_PARTS);
     }
 }

@@ -7,10 +7,10 @@ import jakarta.validation.constraints.Size;
 
 import java.io.InputStream;
 
-public record UploadVideoChunkInput(
-        @NotBlank(message = "fileId cannot be empty")
-        @Size(max = 50, message = "fileId is not a valid id")
-        String fileId,
+public record UploadVideoPartInput(
+        @NotBlank(message = "videoId cannot be empty")
+        @Size(max = 50, message = "videoId is not a valid id")
+        String videoId,
 
         @Min(value = 0, message = "offset must be a non-negative integer")
         long offset,
