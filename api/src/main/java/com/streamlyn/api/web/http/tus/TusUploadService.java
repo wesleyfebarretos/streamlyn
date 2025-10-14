@@ -57,6 +57,7 @@ public class TusUploadService {
         // TODO:
         //  - Handle Header Upload-Defer-Length
         //  - Handle with the expiration
+        //  - Write a custom header to specify the chunk size for the specific upload
         TusUploadHeaderReadService headerReadService = new TusUploadHeaderReadService(req);
         TusUploadHeaderWriteService headerWriteService = new TusUploadHeaderWriteService(res, env);
 

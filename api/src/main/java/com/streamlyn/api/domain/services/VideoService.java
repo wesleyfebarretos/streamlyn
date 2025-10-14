@@ -64,14 +64,12 @@ public class VideoService {
         return video;
     }
 
-    public Video startMultiPartUpload(Video video) {
+    public void startMultiPartUpload(Video video) {
         String extension = getVideoExtension(video);
 
         multiPartUploaderService.start(String.format("%s%s", video.getId(), extension));
 
         log.info("Multi part upload started, new empty video {}", video);
-
-        return video;
     }
 
     public void uploadPart(@Valid UploadVideoPartInput input) {

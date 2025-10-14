@@ -74,7 +74,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
             }
         }
 
-        private int writeChunk(Video video, byte[] chunk, long offset) {
+        private int uploadChunk(Video video, byte[] chunk, long offset) {
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", "application/offset+octet-stream");
             headers.add("Content-Length", String.valueOf(chunk.length));
@@ -139,9 +139,9 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                     )
             );
 
-            Video video = videoService.startMultiPartUpload(videoInput);
+            Video video = videoService.save(videoInput);
 
-            String path = "/files/" + video.getId();
+            videoService.startMultiPartUpload(video);
 
             try (InputStream inputStream = getSampleVideoStream()) {
                 byte[] buffer = new byte[8192];
@@ -151,13 +151,15 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     byte[] chunk = Arrays.copyOf(buffer, bytesRead);
 
-                    int writtenBytes = writeChunk(video, chunk, offset);
+                    int writtenBytes = uploadChunk(video, chunk, offset);
 
                     offset += writtenBytes;
                 }
 
-                assertThat(videoRepository.findAll()).size().isEqualTo(1);
+                List<Video> videos = videoRepository.findAll();
 
+                assertThat(videos).size().isEqualTo(1);
+                assertThat(videos.getFirst().getFileUrl()).contains(videos.getFirst().getId());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -200,7 +202,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                     while(writtenBytes <= bytesPerPause && (bytesRead = inputStream.read(buffer)) != -1) {
                         byte[] chunk = Arrays.copyOf(buffer, bytesRead);
 
-                        int wb = writeChunk(videos.getFirst(), chunk, offset);
+                        int wb = uploadChunk(videos.getFirst(), chunk, offset);
 
                         offset += wb;
                         writtenBytes += wb;

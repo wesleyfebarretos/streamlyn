@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("videos")
+@RequestMapping("/tus/videos")
 public class TusUploadController {
     private final TusUploadService tusUploadService;
 
