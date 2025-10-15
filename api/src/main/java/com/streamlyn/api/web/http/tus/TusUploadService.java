@@ -1,6 +1,7 @@
 package com.streamlyn.api.web.http.tus;
 
 import com.streamlyn.api.domain.exception.ApiException;
+import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.inputs.CreateVideoUploadInput;
 import com.streamlyn.api.domain.inputs.UploadVideoInput;
 import com.streamlyn.api.domain.inputs.UploadVideoPartInput;
@@ -35,6 +36,7 @@ public class TusUploadService {
         headerWriteService.writeSupportedVersions();
         headerWriteService.writeUploadMaxSize();
         headerWriteService.writeExtensions();
+        headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSize());
     }
 
     public void getUploadOffset(HttpServletResponse res, String videoId) {
@@ -48,6 +50,7 @@ public class TusUploadService {
 
         if(video.getUploadLength() != null) {
             headerWriteService.writeUploadLength(video.getUploadLength());
+            headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSizeOf(video.getUploadLength()));
         }
 
         log.info("video offset retrieved for id: {}, offset = {}", video.getId(), video.getOffset());
@@ -78,15 +81,16 @@ public class TusUploadService {
 
         Video video = videoService.save(videoInput);
 
-        if(headerReadService.getUploadLength().isPresent() &&
-                headerReadService.getUploadLength().get() > multiPartUploaderService.minPartSize()) {
+        if(headerReadService.getUploadLength().isPresent() && headerReadService.getUploadLength().get() > multiPartUploaderService.minPartSize()) {
             videoService.startMultiPartUpload(video);
+
+            headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSizeOf(headerReadService.getUploadLength().get()));
         }
 
         headerWriteService.writeLocation("/videos/" + video.getId());
     }
 
-    public void uploadChunk(HttpServletRequest req, HttpServletResponse res, String videoId) {
+    public void uploadPart(HttpServletRequest req, HttpServletResponse res, String videoId) {
         // TODO: - Handle Header Upload-Defer-Length
         TusUploadHeaderReadService headerReadService = new TusUploadHeaderReadService(req);
         TusUploadHeaderWriteService headerWriteService = new TusUploadHeaderWriteService(res, env);
@@ -105,6 +109,10 @@ public class TusUploadService {
 
         if (contentLength.isEmpty()) {
             throw ApiException.badRequest("missing Content-length header");
+        }
+
+        if(headerReadService.getUploadLength().isPresent()) {
+            headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSizeOf(headerReadService.getUploadLength().get()));
         }
 
         try (InputStream inputStream = req.getInputStream()) {

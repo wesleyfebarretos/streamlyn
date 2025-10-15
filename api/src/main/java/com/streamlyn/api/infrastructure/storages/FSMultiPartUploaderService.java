@@ -5,6 +5,7 @@ import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.interfaces.ObjectStorageMultiPartUploaderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedOutputStream;
@@ -17,6 +18,7 @@ import java.nio.file.StandardCopyOption;
 
 @Component
 @Slf4j
+@Primary
 public class FSMultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
     private final Path tmpDir;
     private final Path outputDir;

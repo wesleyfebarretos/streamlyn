@@ -56,4 +56,8 @@ public class TusUploadHeaderWriteService {
     public void writeNoStoreCacheControl() {
         res.setHeader("Cache-Control", "no-store");
     }
+
+    public void writeMinChunkSize(long size) {
+        res.setHeader("Tus-Min-Chunk-Size", String.valueOf(size));
+    }
 }

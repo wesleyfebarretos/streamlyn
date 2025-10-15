@@ -81,7 +81,7 @@ public class VideoService {
 
         validateUploadProgress(video);
 
-        if (video.getOffset() + input.contentLength() < multiPartUploaderService.minPartSizeOf(video.getUploadLength())) {
+        if (isNotLastPartAndLessThanMinPartSize(video, input)) {
             throw ApiException.badRequest(
                     String.format("Chunk size to small. The minimum Allowed for this upload is %d bytes, except the last one.", multiPartUploaderService.minPartSizeOf(video.getUploadLength()))
             );
@@ -159,5 +159,10 @@ public class VideoService {
         } catch (MimeTypeException e) {
             throw ApiException.unsupportedMediaType(String.format("invalid video mimetype: %s.", video.getMimeType()));
         }
+    }
+
+    private boolean isNotLastPartAndLessThanMinPartSize(Video video, UploadVideoPartInput input) {
+        return video.getOffset() + input.contentLength() < video.getUploadLength() &&
+                input.contentLength() < multiPartUploaderService.minPartSizeOf(video.getUploadLength());
     }
 }

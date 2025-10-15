@@ -21,10 +21,9 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Primary
 public class S3MultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
     private final S3Client s3Client;
-    private final long MIN_PART_SIZE = 5 * 1024 * 1024;
+    private final long MIN_PART_SIZE = 5L * 1024L * 1024L;
     private final int MAX_UPLOAD_PARTS = 10000;
     // TODO: Remove this test variable
     private String uploadId;

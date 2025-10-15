@@ -31,7 +31,7 @@ public class TusUploadController {
     )
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void uploadChunk(HttpServletRequest req, HttpServletResponse res, @PathVariable String videoId) {
-        tusUploadService.uploadChunk(req, res, videoId);
+        tusUploadService.uploadPart(req, res, videoId);
     }
 
     @RequestMapping(method = RequestMethod.HEAD, path = "{videoId}")
