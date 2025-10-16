@@ -20,6 +20,7 @@ import java.util.List;
 
 @Service
 @Slf4j
+@Primary
 @RequiredArgsConstructor
 public class S3MultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
     private final S3Client s3Client;
