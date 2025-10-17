@@ -25,11 +25,11 @@ import java.util.List;
 @Primary
 @RequiredArgsConstructor
 public class S3MultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
-    private final long MIN_PART_SIZE = 5L * 1024L * 1024L;
-    private final int MAX_UPLOAD_PARTS = 10000;
-    private final String PART_NUMBER_KEY_PREFIX = "s3:uploads:counters:";
-    private final String PARTS_KEY_PREFIX = "s3:uploads:parts:";
-    private final String UPLOAD_ID_KEY_PREFIX= "s3:uploads:upload_ids:";
+    private static final long MIN_PART_SIZE = 5L * 1024L * 1024L;
+    private static final int MAX_UPLOAD_PARTS = 10000;
+    private static final String PART_NUMBER_KEY_PREFIX = "s3:uploads:counters:";
+    private static final String PARTS_KEY_PREFIX = "s3:uploads:parts:";
+    private static final String UPLOAD_ID_KEY_PREFIX= "s3:uploads:upload_ids:";
 
 
     private final S3Client s3Client;

@@ -23,8 +23,8 @@ public class FSMultiPartUploaderService implements ObjectStorageMultiPartUploade
     private final Path tmpDir;
     private final Path outputDir;
 
-    private final long MIN_PART_SIZE = 256 * 1024;
-    private final int MAX_UPLOAD_PARTS = Integer.MAX_VALUE;
+    private static final long MIN_PART_SIZE = 256 * 1024;
+    private static final int MAX_UPLOAD_PARTS = Integer.MAX_VALUE;
 
     @Value("${app.url}")
     private String APP_URL;
