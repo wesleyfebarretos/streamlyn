@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,9 @@ public class TusUploadService {
     private final Environment env;
     private final VideoService videoService;
     private final ObjectStorageMultiPartUploaderService multiPartUploaderService;
+
+    @Value("${app.url}")
+    private String APP_URL;
 
     public void protocolConfiguration(HttpServletResponse res) {
         TusUploadHeaderWriteService headerWriteService = new TusUploadHeaderWriteService(res, env);
@@ -60,7 +64,6 @@ public class TusUploadService {
         // TODO:
         //  - Handle Header Upload-Defer-Length
         //  - Handle with the expiration
-        //  - Write a custom header to specify the chunk size for the specific upload
         TusUploadHeaderReadService headerReadService = new TusUploadHeaderReadService(req);
         TusUploadHeaderWriteService headerWriteService = new TusUploadHeaderWriteService(res, env);
 
@@ -87,7 +90,7 @@ public class TusUploadService {
             headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSizeOf(headerReadService.getUploadLength().get()));
         }
 
-        headerWriteService.writeLocation("/videos/" + video.getId());
+        headerWriteService.writeLocation(APP_URL + "/tus/videos/" + video.getId());
     }
 
     public void uploadPart(HttpServletRequest req, HttpServletResponse res, String videoId) {

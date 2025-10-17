@@ -12,3 +12,8 @@ spring:
         bucket: ${OBJECT_STORAGE_BUCKET:streamlyn}
         endpoint: ${OBJECT_STORAGE_ENDPOINT:http://localhost:9000}
         path-style-access-enabled: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}

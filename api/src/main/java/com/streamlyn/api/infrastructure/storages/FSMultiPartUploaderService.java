@@ -12,19 +12,22 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 @Component
 @Slf4j
-@Primary
 public class FSMultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
     private final Path tmpDir;
     private final Path outputDir;
 
     private final long MIN_PART_SIZE = 256 * 1024;
     private final int MAX_UPLOAD_PARTS = Integer.MAX_VALUE;
+
+    @Value("${app.url}")
+    private String APP_URL;
 
 
     public FSMultiPartUploaderService(

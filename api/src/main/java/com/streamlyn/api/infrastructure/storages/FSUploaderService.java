@@ -16,6 +16,7 @@ import java.nio.file.Path;
 
 @Component
 @Slf4j
+@Primary
 public class FSUploaderService implements ObjectStorageUploaderService {
     private final Path tmpDir;
     private final Path outputDir;
