@@ -31,9 +31,6 @@ public class TusUploadService {
     private final VideoService videoService;
     private final ObjectStorageMultiPartUploaderService multiPartUploaderService;
 
-    @Value("${app.url}")
-    private String APP_URL;
-
     public void protocolConfiguration(HttpServletResponse res) {
         TusUploadHeaderWriteService headerWriteService = new TusUploadHeaderWriteService(res, env);
         headerWriteService.writeProtocolVersion();
@@ -90,7 +87,7 @@ public class TusUploadService {
             headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSizeOf(headerReadService.getUploadLength().get()));
         }
 
-        headerWriteService.writeLocation(APP_URL + "/tus/videos/" + video.getId());
+        headerWriteService.writeLocation(env.getProperty("app.url") + "/tus/videos/" + video.getId());
     }
 
     public void uploadPart(HttpServletRequest req, HttpServletResponse res, String videoId) {

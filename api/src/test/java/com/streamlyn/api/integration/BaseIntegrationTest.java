@@ -2,11 +2,13 @@ package com.streamlyn.api.integration;
 
 import com.mongodb.client.MongoDatabase;
 import com.redis.testcontainers.RedisContainer;
+import jakarta.annotation.PostConstruct;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,6 +41,9 @@ public abstract class BaseIntegrationTest {
     @Autowired
     protected MongoTemplate mongoTemplate;
 
+    @LocalServerPort
+    private int port;
+
     protected static final MongoDBContainer MONGODB = new MongoDBContainer(DockerImageName.parse("mongo:8.0"))
             .withEnv("TZ", ZonedDateTime.now().getZone().getId())
             .withReuse(true)
@@ -70,6 +75,7 @@ public abstract class BaseIntegrationTest {
         ).join();
     }
 
+
     @DynamicPropertySource
     static void mongoSetup(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", MONGODB::getReplicaSetUrl);
@@ -82,10 +88,7 @@ public abstract class BaseIntegrationTest {
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
                                 AwsBasicCredentials.create("streamlyn", "streamlyn")
-                        )
-                )
-                .region(Region.US_EAST_1)
-                .forcePathStyle(true)
+                        ) ) .region(Region.US_EAST_1) .forcePathStyle(true)
                 .build();
 
         String BUCKET = "streamlyn";
@@ -118,5 +121,10 @@ public abstract class BaseIntegrationTest {
                 .forEach(collection -> {
                     mongoTemplate.remove(new Query(), collection);
                 });
+    }
+
+    @PostConstruct
+    void setAppUrl() {
+        System.setProperty("app.url", "http://localhost:" + port);
     }
 }

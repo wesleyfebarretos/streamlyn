@@ -4,22 +4,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.exception.MultiPartUploadException;
-import com.streamlyn.api.domain.interfaces.ObjectStorageMultiPartUploaderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -53,10 +53,16 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
         try (InputStream is = inputStream) {
             byte[] buffer = new byte[10 * 1024 * 1024];
             int bytesRead;
+            int offset = 0;
 
             String uploadId = redisTemplate.opsForValue().get(UPLOAD_ID_KEY_PREFIX.concat(filePath));
 
-            while ((bytesRead = is.read(buffer)) != -1) {
+            /**
+             * TODO:
+             * Make sure that buffer is filled or reach EOF and refactor other methods using CoioteInputStream
+             * cause the limit of read is 8192 bytes
+             */
+            while ((bytesRead = is.readNBytes(buffer, offset, buffer.length - offset)) > 0) {
                 Long partNumber = redisTemplate.opsForValue().increment(PART_NUMBER_KEY_PREFIX.concat(filePath));
 
                 UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
@@ -72,15 +78,22 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
                         uploadPartRequest,
                         RequestBody.fromByteBuffer(byteBuffer));
 
-                CompletedPart part = CompletedPart.builder()
+                CompletedPart completedPart = CompletedPart.builder()
                         .partNumber(partNumber.intValue())
                         .eTag(partResponse.eTag())
                         .build();
 
+                Map<String, Object> part = Map.of(
+                        "partNumber", completedPart.partNumber(),
+                        "eTag", completedPart.eTag()
+                );
+
                 ObjectMapper mapper = new ObjectMapper();
+
                 redisTemplate.opsForList().rightPush(PARTS_KEY_PREFIX.concat(filePath), mapper.writeValueAsString(part));
 
                 writtenBytes += bytesRead;
+                offset += bytesRead;
             }
         } catch ( JsonProcessingException e) {
             throw ApiException.internalServerError(e.getMessage());
@@ -107,9 +120,13 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
         ObjectMapper mapper = new ObjectMapper();
 
         List<CompletedPart> parts = partsRaw.stream()
-                .map(part -> {
+                .map(completedPart -> {
                     try {
-                        return mapper.readValue(part, CompletedPart.class);
+                        Map<String, Object> part = mapper.readValue(completedPart, Map.class);
+                        return CompletedPart.builder()
+                                .eTag((String) part.get("eTag"))
+                                .partNumber((Integer) part.get("partNumber"))
+                                .build();
                     } catch(IOException e) {
                         throw ApiException.internalServerError(e.getMessage());
                     }
