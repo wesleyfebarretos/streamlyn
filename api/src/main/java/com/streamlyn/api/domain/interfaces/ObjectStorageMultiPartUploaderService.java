@@ -7,8 +7,8 @@ import java.io.InputStream;
 
 public interface ObjectStorageMultiPartUploaderService {
     void start(String filePath) throws ApiException;
-    long uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException;
+    int uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException;
     String complete(String filePath) throws ApiException;
-    long minPartSize();
-    long minPartSizeOf(long uploadSize);
+    int minPartSize();
+    int minPartSizeOf(long uploadSize);
 }

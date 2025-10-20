@@ -19,12 +19,9 @@ import java.nio.file.StandardCopyOption;
 
 @Component
 @Slf4j
-public class FSMultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
+public class FSMultiPartUploaderService extends AbstractMultiPartUploaderService {
     private final Path tmpDir;
     private final Path outputDir;
-
-    private static final long MIN_PART_SIZE = 256 * 1024;
-    private static final int MAX_UPLOAD_PARTS = Integer.MAX_VALUE;
 
     @Value("${app.url}")
     private String APP_URL;
@@ -69,12 +66,12 @@ public class FSMultiPartUploaderService implements ObjectStorageMultiPartUploade
     }
 
     @Override
-    public long uploadPart(String filePath, InputStream is) throws MultiPartUploadException {
+    public int uploadPart(String filePath, InputStream is) throws MultiPartUploadException {
         if (!Files.exists(tmpDir.resolve(filePath))) {
             throw ApiException.notFound("failed to upload part, file path was not found");
         }
 
-        long writtenBytes = 0;
+        int writtenBytes = 0;
 
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpDir.resolve(filePath).toFile(), true))) {
             byte[] buffer = new byte[10 * 1024 * 1024];
@@ -115,12 +112,12 @@ public class FSMultiPartUploaderService implements ObjectStorageMultiPartUploade
     }
 
     @Override
-    public long minPartSize() {
-        return MIN_PART_SIZE;
+    protected int getMinPartSize() {
+        return 256 * 1024;
     }
 
     @Override
-    public long minPartSizeOf(long uploadSize) {
-        return Math.max(MIN_PART_SIZE, uploadSize / MAX_UPLOAD_PARTS);
+    protected int getMaxUploadParts() {
+        return Integer.MAX_VALUE;
     }
 }

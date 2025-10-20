@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -24,9 +25,7 @@ import java.util.List;
 @Slf4j
 @Primary
 @RequiredArgsConstructor
-public class S3MultiPartUploaderService implements ObjectStorageMultiPartUploaderService {
-    private static final long MIN_PART_SIZE = 5L * 1024L * 1024L;
-    private static final int MAX_UPLOAD_PARTS = 10000;
+public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService {
     private static final String PART_NUMBER_KEY_PREFIX = "s3:uploads:counters:";
     private static final String PARTS_KEY_PREFIX = "s3:uploads:parts:";
     private static final String UPLOAD_ID_KEY_PREFIX= "s3:uploads:upload_ids:";
@@ -48,8 +47,8 @@ public class S3MultiPartUploaderService implements ObjectStorageMultiPartUploade
     }
 
     @Override
-    public long uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException {
-        long writtenBytes = 0;
+    public int uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException {
+        int writtenBytes = 0;
 
         try (InputStream is = inputStream) {
             byte[] buffer = new byte[10 * 1024 * 1024];
@@ -127,12 +126,12 @@ public class S3MultiPartUploaderService implements ObjectStorageMultiPartUploade
     }
 
     @Override
-    public long minPartSize() {
-        return MIN_PART_SIZE;
+    protected int getMinPartSize() {
+        return 5 * 1024 * 1024;
     }
 
     @Override
-    public long minPartSizeOf(long uploadSize) {
-        return Math.max(MIN_PART_SIZE, uploadSize / MAX_UPLOAD_PARTS);
+    protected int getMaxUploadParts() {
+        return 10000;
     }
 }
