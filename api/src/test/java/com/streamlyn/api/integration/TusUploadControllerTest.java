@@ -55,7 +55,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
             try {
                 return mockMvc.perform(
-                                post("/files")
+                                post("/tus/videos")
                                         .header("Upload-Length", Long.toString(fileBytesLen))
                                         .header("Upload-Metadata", String.format(
                                                 "filename %s,filetype %s,title %s", filename, fileType, title
@@ -83,7 +83,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
             HttpEntity<byte[]> requestEntity = new HttpEntity<>(chunk, headers);
 
-            String path = "/files/" + video.getId();
+            String path = "/tus/videos/" + video.getId();
 
             ResponseEntity<Void> response = restTemplate.exchange(path, HttpMethod.PATCH, requestEntity, Void.class);
 
@@ -107,7 +107,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
             List<Video> videos = videoRepository.findAll();
 
             assertThat(result.getResponse().getHeader("Location"))
-                    .isEqualTo(String.format("/files/%s", videos.getFirst().getId()));
+                    .isEqualTo(String.format("/tus/videos/%s", videos.getFirst().getId()));
 
             assertThat(videoRepository.count()).isEqualTo(1L);
         }
@@ -184,7 +184,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
                 for (int i = 1; i <= uploadPauses; i++) {
                     MvcResult result = mockMvc.perform(
-                                    head(String.format("/files/%s", videos.getFirst().getId()))
+                                    head(String.format("/tus/videos/%s", videos.getFirst().getId()))
                                             .header("Tus-Resumable", "1.0.0")
 
                             )
@@ -212,7 +212,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                 }
 
                 mockMvc.perform(
-                                head(String.format("/files/%s", videos.getFirst().getId()))
+                                head(String.format("/tus/videos/%s", videos.getFirst().getId()))
                                         .header("Tus-Resumable", "1.0.0")
 
                         )
