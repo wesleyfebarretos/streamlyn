@@ -23,10 +23,6 @@ public class FSMultiPartUploaderService extends AbstractMultiPartUploaderService
     private final Path tmpDir;
     private final Path outputDir;
 
-    @Value("${app.url}")
-    private String APP_URL;
-
-
     public FSMultiPartUploaderService(
         @Value("${object-storage.tmp-dir}") String tmpDir,
         @Value("${object-storage.output-dir}") String outputDir
@@ -77,7 +73,7 @@ public class FSMultiPartUploaderService extends AbstractMultiPartUploaderService
             byte[] buffer = new byte[10 * 1024 * 1024];
             int bytesRead;
 
-            while((bytesRead = is.read(buffer)) != -1) {
+            while((bytesRead = is.readNBytes(buffer, 0, buffer.length)) > 0) {
                 bos.write(buffer, 0, bytesRead);
                 writtenBytes += bytesRead;
             }

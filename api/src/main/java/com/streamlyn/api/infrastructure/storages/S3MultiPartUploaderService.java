@@ -53,16 +53,10 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
         try (InputStream is = inputStream) {
             byte[] buffer = new byte[10 * 1024 * 1024];
             int bytesRead;
-            int offset = 0;
 
             String uploadId = redisTemplate.opsForValue().get(UPLOAD_ID_KEY_PREFIX.concat(filePath));
 
-            /**
-             * TODO:
-             * Make sure that buffer is filled or reach EOF and refactor other methods using CoioteInputStream
-             * cause the limit of read is 8192 bytes
-             */
-            while ((bytesRead = is.readNBytes(buffer, offset, buffer.length - offset)) > 0) {
+            while ((bytesRead = is.readNBytes(buffer, 0, buffer.length)) > 0) {
                 Long partNumber = redisTemplate.opsForValue().increment(PART_NUMBER_KEY_PREFIX.concat(filePath));
 
                 UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
@@ -93,7 +87,6 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
                 redisTemplate.opsForList().rightPush(PARTS_KEY_PREFIX.concat(filePath), mapper.writeValueAsString(part));
 
                 writtenBytes += bytesRead;
-                offset += bytesRead;
             }
         } catch ( JsonProcessingException e) {
             throw ApiException.internalServerError(e.getMessage());

@@ -58,7 +58,7 @@ public class FSUploaderService implements ObjectStorageUploaderService {
                 byte[] buffer = new byte[20 * 1024 * 1024];
                 int bytesRead;
 
-                while((bytesRead = inputStream.read(buffer)) != -1) {
+                while((bytesRead = inputStream.readNBytes(buffer, 0, buffer.length)) > 0) {
                     bos.write(buffer, 0, bytesRead);
                 }
             }
