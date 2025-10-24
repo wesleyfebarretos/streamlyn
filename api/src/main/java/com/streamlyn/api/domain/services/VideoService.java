@@ -67,7 +67,7 @@ public class VideoService {
     public void startMultiPartUpload(Video video) {
         String extension = getVideoExtension(video);
 
-        multiPartUploaderService.start(String.format("%s%s", video.getId(), extension));
+        multiPartUploaderService.start(String.format("%s%s", video.getId(), extension), video.getMimeType());
 
         log.info("Multi part upload started, new empty video {}", video);
     }
@@ -131,7 +131,7 @@ public class VideoService {
 
         String filePath = String.format("%s%s", video.getId(), extension);
 
-        video.setFileUrl(uploaderService.upload(filePath, input.data()));
+        video.setFileUrl(uploaderService.upload(filePath, input.data(), video.getMimeType()));
         video.setOffset(video.getUploadLength());
 
         videoRepository.save(video);

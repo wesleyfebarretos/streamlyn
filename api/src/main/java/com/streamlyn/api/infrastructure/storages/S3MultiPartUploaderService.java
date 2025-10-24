@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.exception.MultiPartUploadException;
+import com.streamlyn.api.domain.services.AbstractMultiPartUploaderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +15,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -23,8 +23,8 @@ import java.util.Map;
 
 @Service
 @Slf4j
-@Primary
 @RequiredArgsConstructor
+@Primary
 public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService {
     private static final String PART_NUMBER_KEY_PREFIX = "s3:uploads:counters:";
     private static final String PARTS_KEY_PREFIX = "s3:uploads:parts:";
@@ -38,9 +38,10 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
     private String BUCKET;
 
     @Override
-    public void start(String filePath) throws ApiException {
+    public void start(String filePath, String contentType) throws ApiException {
         CreateMultipartUploadResponse createMultipartUploadResponse = s3Client.createMultipartUpload(b -> b
                 .bucket(BUCKET)
+                .contentType(contentType)
                 .key(filePath));
 
         this.redisTemplate.opsForValue().set(UPLOAD_ID_KEY_PREFIX.concat(filePath), createMultipartUploadResponse.uploadId());

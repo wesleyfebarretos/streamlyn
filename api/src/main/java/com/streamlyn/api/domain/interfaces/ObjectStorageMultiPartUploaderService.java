@@ -6,7 +6,7 @@ import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import java.io.InputStream;
 
 public interface ObjectStorageMultiPartUploaderService {
-    void start(String filePath) throws ApiException;
+    void start(String filePath, String contentType) throws ApiException;
     int uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException;
     String complete(String filePath) throws ApiException;
     int minPartSize();

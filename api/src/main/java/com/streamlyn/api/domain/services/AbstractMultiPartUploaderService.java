@@ -1,4 +1,4 @@
-package com.streamlyn.api.infrastructure.storages;
+package com.streamlyn.api.domain.services;
 
 import com.streamlyn.api.domain.interfaces.ObjectStorageMultiPartUploaderService;
 

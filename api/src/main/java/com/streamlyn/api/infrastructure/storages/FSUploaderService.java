@@ -16,7 +16,6 @@ import java.nio.file.Path;
 
 @Component
 @Slf4j
-@Primary
 public class FSUploaderService implements ObjectStorageUploaderService {
     private final Path tmpDir;
     private final Path outputDir;
@@ -44,7 +43,7 @@ public class FSUploaderService implements ObjectStorageUploaderService {
     }
 
     @Override
-    public String upload(String filePath, InputStream inputStream) throws ApiException {
+    public String upload(String filePath, InputStream inputStream, String contentType) throws ApiException {
         try {
             Path filepath = outputDir.resolve(filePath);
 

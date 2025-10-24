@@ -2,17 +2,15 @@ package com.streamlyn.api.infrastructure.storages;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.exception.MultiPartUploadException;
-import com.streamlyn.api.domain.interfaces.ObjectStorageMultiPartUploaderService;
+import com.streamlyn.api.domain.services.AbstractMultiPartUploaderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -46,7 +44,7 @@ public class FSMultiPartUploaderService extends AbstractMultiPartUploaderService
     }
 
     @Override
-    public void start(String filePath) throws ApiException {
+    public void start(String filePath, String contentType) throws ApiException {
         try {
             Path file = tmpDir.resolve(filePath);
 
@@ -109,7 +107,7 @@ public class FSMultiPartUploaderService extends AbstractMultiPartUploaderService
 
     @Override
     protected int getMinPartSize() {
-        return 256 * 1024;
+        return 5 * 1024 * 1024;
     }
 
     @Override
