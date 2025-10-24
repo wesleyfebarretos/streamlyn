@@ -214,87 +214,88 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                 throw new RuntimeException(e);
             }
         }
-    }
 
-    private InputStream getSampleVideoStream(String filename) throws Exception {
-        InputStream inputStream = getClass().getResourceAsStream(filename);
-        if (inputStream == null) {
-            throw new IllegalStateException("sample video file not found in resources");
+
+        private InputStream getSampleVideoStream(String filename) throws Exception {
+            InputStream inputStream = getClass().getResourceAsStream(filename);
+            if (inputStream == null) {
+                throw new IllegalStateException("sample video file not found in resources");
+            }
+
+            return new BufferedInputStream(inputStream);
         }
 
-        return new BufferedInputStream(inputStream);
-    }
+        private long sampleVideoUploadSize(String filename) {
+            return new File(Objects.requireNonNull(getClass().getResource(filename)).getFile()).length();
+        }
 
-    private long sampleVideoUploadSize(String filename) {
-        return new File(Objects.requireNonNull(getClass().getResource(filename)).getFile()).length();
-    }
+        private int uploadChunk(Video video, byte[] chunk, long offset) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Type", "application/offset+octet-stream");
+            headers.add("Content-Length", String.valueOf(chunk.length));
+            headers.add("Tus-Resumable", "1.0.0");
+            headers.add("Upload-Offset", String.valueOf(offset));
 
-    private int uploadChunk(Video video, byte[] chunk, long offset) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", "application/offset+octet-stream");
-        headers.add("Content-Length", String.valueOf(chunk.length));
-        headers.add("Tus-Resumable", "1.0.0");
-        headers.add("Upload-Offset", String.valueOf(offset));
+            HttpEntity<byte[]> requestEntity = new HttpEntity<>(chunk, headers);
 
-        HttpEntity<byte[]> requestEntity = new HttpEntity<>(chunk, headers);
+            String path = "/tus/videos/" + video.getId();
 
-        String path = "/tus/videos/" + video.getId();
+            ResponseEntity<Void> response = restTemplate.exchange(path, HttpMethod.PATCH, requestEntity, Void.class);
 
-        ResponseEntity<Void> response = restTemplate.exchange(path, HttpMethod.PATCH, requestEntity, Void.class);
+            assertThat(response .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+            assertThat(response.getHeaders().get("upload-offset")).isNotEmpty();
 
-        assertThat(response .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(response.getHeaders().get("upload-offset")).isNotEmpty();
+            Optional<String> uploadOffset = Optional.ofNullable(response.getHeaders().getFirst("upload-offset"));
 
-        Optional<String> uploadOffset = Optional.ofNullable(response.getHeaders().getFirst("upload-offset"));
+            assertThat(uploadOffset).isPresent();
+            assertThat(uploadOffset.get()).isEqualTo(Long.toString(chunk.length + offset));
+            assertThat(response.getHeaders().getFirst("tus-resumable")).isEqualTo("1.0.0");
 
-        assertThat(uploadOffset).isPresent();
-        assertThat(uploadOffset.get()).isEqualTo(Long.toString(chunk.length + offset));
-        assertThat(response.getHeaders().getFirst("tus-resumable")).isEqualTo("1.0.0");
+            return chunk.length;
+        }
 
-        return chunk.length;
-    }
+        private CreateVideoUploadInput buildVideoInput(
+                String filename,
+                String fileType,
+                String title,
+                List<String> tags,
+                String description,
+                long uploadSize
+        ) {
+            return new CreateVideoUploadInput(
+                    title,
+                    filename,
+                    fileType,
+                    tags,
+                    description,
+                    uploadSize,
+                    String.format("filename %s,filetype %s,title %s,tags %s,description %s",
+                            Base64.getEncoder().encodeToString(filename.getBytes()),
+                            Base64.getEncoder().encodeToString(fileType.getBytes()),
+                            Base64.getEncoder().encodeToString(title.getBytes()),
+                            Base64.getEncoder().encodeToString(String.join(",", tags).getBytes()),
+                            Base64.getEncoder().encodeToString(description.getBytes())
+                    )
+            );
+        }
 
-    private CreateVideoUploadInput buildVideoInput(
-            String filename,
-            String fileType,
-            String title,
-            List<String> tags,
-            String description,
-            long uploadSize
-    ) {
-        return new CreateVideoUploadInput(
-                title,
-                filename,
-                fileType,
-                tags,
-                description,
-                uploadSize,
-                String.format("filename %s,filetype %s,title %s,tags %s,description %s",
-                        Base64.getEncoder().encodeToString(filename.getBytes()),
-                        Base64.getEncoder().encodeToString(fileType.getBytes()),
-                        Base64.getEncoder().encodeToString(title.getBytes()),
-                        Base64.getEncoder().encodeToString(String.join(",", tags).getBytes()),
-                        Base64.getEncoder().encodeToString(description.getBytes())
-                )
-        );
-    }
+        private Video create10MBVideo() {
+            long uploadSize = sampleVideoUploadSize("/sample-video-10mb.mp4");
 
-    private Video create10MBVideo() {
-        long uploadSize = sampleVideoUploadSize("/sample-video-10mb.mp4");
+            String filename = "sample-video-10mb.mp4";
+            String fileType = "video/mp4";
+            String title = "SAMPLE VIDEO 10MB";
+            List<String> tags = List.of("sample video 10mb", "mp4");
+            String description = "Sample Video 10MB Description";
 
-        String filename = "sample-video-10mb.mp4";
-        String fileType = "video/mp4";
-        String title = "SAMPLE VIDEO 10MB";
-        List<String> tags = List.of("sample video 10mb", "mp4");
-        String description = "Sample Video 10MB Description";
-
-        return videoService.save(buildVideoInput(
-                filename,
-                fileType,
-                title,
-                tags,
-                description,
-                uploadSize
-        ));
+            return videoService.save(buildVideoInput(
+                    filename,
+                    fileType,
+                    title,
+                    tags,
+                    description,
+                    uploadSize
+            ));
+        }
     }
 }
