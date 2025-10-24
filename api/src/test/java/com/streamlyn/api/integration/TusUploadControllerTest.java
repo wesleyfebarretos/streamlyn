@@ -21,11 +21,11 @@ import java.io.InputStream;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class TusUploadControllerTest extends BaseIntegrationTest {
@@ -35,6 +35,9 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
     private final ObjectStorageMultiPartUploaderService multiPartUploaderService;
     @Value("${app.url}")
     private String appUrl;
+
+    @Value("${tus.max-size}")
+    private String tusMaxSize;
 
 
     @Nested
@@ -296,6 +299,63 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
                     description,
                     uploadSize
             ));
+        }
+    }
+
+    @Nested
+    class ServerConfiguration {
+        @Test
+        @DisplayName("it should get the current server configuration")
+        public void getServerConfiguration() throws Exception {
+            mockMvc.perform(
+                            options("/tus/videos")
+                    )
+                    .andDo(print())
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("it should ensure protocol version contains 1.0.0")
+        public void protocolVersion() throws Exception{
+            mockMvc.perform(
+                            options("/tus/videos")
+                    )
+                    .andDo(print())
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().string("Tus-Resumable", containsString("1.0.0")));
+        }
+
+        @Test
+        @DisplayName("it should ensure Tus-Max-Size is config based")
+        public void tusMaxSize() throws Exception{
+            mockMvc.perform(
+                            options("/tus/videos")
+                    )
+                    .andDo(print())
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().string("Tus-Max-Size", tusMaxSize));
+        }
+
+        @Test
+        @DisplayName("it should ensure that Tus-Extension is available at headers with the right value")
+        public void tusExtensions() throws Exception{
+            mockMvc.perform(
+                            options("/tus/videos")
+                    )
+                    .andDo(print())
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().string("Tus-Extension", "creation,expiration"));
+        }
+
+        @Test
+        @DisplayName("it should ensure that Tus-Min-Chunk-Size is available at headers with the right value")
+        public void tusMinChunkSize() throws Exception{
+            mockMvc.perform(
+                            options("/tus/videos")
+                    )
+                    .andDo(print())
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().string("Tus-Min-Chunk-Size", String.valueOf(multiPartUploaderService.minPartSize())));
         }
     }
 }
