@@ -60,12 +60,12 @@ public class FSMultiPartUploaderService extends AbstractMultiPartUploaderService
     }
 
     @Override
-    public int uploadPart(String filePath, InputStream is) throws MultiPartUploadException {
+    public long uploadPart(String filePath, InputStream is) throws MultiPartUploadException {
         if (!Files.exists(tmpDir.resolve(filePath))) {
             throw ApiException.notFound("failed to upload part, file path was not found");
         }
 
-        int writtenBytes = 0;
+        long writtenBytes = 0L;
 
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpDir.resolve(filePath).toFile(), true))) {
             byte[] buffer = new byte[10 * 1024 * 1024];

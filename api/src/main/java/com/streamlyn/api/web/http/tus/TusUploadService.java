@@ -1,7 +1,6 @@
 package com.streamlyn.api.web.http.tus;
 
 import com.streamlyn.api.domain.exception.ApiException;
-import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.inputs.CreateVideoUploadInput;
 import com.streamlyn.api.domain.inputs.UploadVideoInput;
 import com.streamlyn.api.domain.inputs.UploadVideoPartInput;
@@ -13,7 +12,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 

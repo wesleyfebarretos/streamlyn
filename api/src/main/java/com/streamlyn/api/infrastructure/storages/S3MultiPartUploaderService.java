@@ -48,8 +48,8 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
     }
 
     @Override
-    public int uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException {
-        int writtenBytes = 0;
+    public long uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException {
+        long writtenBytes = 0L;
 
         try (InputStream is = inputStream) {
             byte[] buffer = new byte[10 * 1024 * 1024];

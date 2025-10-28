@@ -24,7 +24,7 @@ app:
   url: ${APP_URL:http://localhost:8080}
 
 tus:
-  max-size: ${TUS_MAX_SIZE:1073741824}
+  max-size: ${TUS_MAX_SIZE:10737418240}
 
 object-storage:
   tmp-dir: ${OBJECT_STORAGE_TMP_DIR:/tmp}
