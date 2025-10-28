@@ -109,8 +109,10 @@ public class VideoService {
             videoRepository.save(video);
         }
 
-        log.info("uploaded new chunk for upload id {}: Content-Length={}, previous offset={}, current offset={}, upload length={}",
-                video.getId(), input.contentLength(), input.offset(), video.getOffset(), video.getUploadLength());
+        double progress = ((double) video.getOffset() / video.getUploadLength()) * 100;
+
+        log.info("uploaded new chunk for upload id {}: Progress={}%, Content Length={}, Current Offset={}, Upload Length={}",
+                video.getId(), String.format("%.2f", progress), input.contentLength(), video.getOffset(), video.getUploadLength());
     }
 
     public void upload(@Valid UploadVideoInput input) {
@@ -136,8 +138,7 @@ public class VideoService {
 
         videoRepository.save(video);
 
-        log.info("uploaded new video for upload id {}: Content-Length={}, current offset={}, upload length={}",
-                video.getId(), input.contentLength(), video.getOffset(), video.getUploadLength());
+        log.info("uploaded new video for upload id {}: Upload Length={}", video.getId(), video.getUploadLength());
     }
 
     private Video findByIdOrThrow(String id) {

@@ -26,9 +26,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Primary
 public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService {
-    private static final String PART_NUMBER_KEY_PREFIX = "s3:uploads:counters:";
-    private static final String PARTS_KEY_PREFIX = "s3:uploads:parts:";
-    private static final String UPLOAD_ID_KEY_PREFIX= "s3:uploads:upload_ids:";
+    private static final String PART_NUMBER_KEY_PREFIX = "s3:upload:counter:";
+    private static final String PARTS_KEY_PREFIX = "s3:upload:parts:";
+    private static final String UPLOAD_ID_KEY_PREFIX= "s3:upload:upload_id:";
 
 
     private final S3Client s3Client;
