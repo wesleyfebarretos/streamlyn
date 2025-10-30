@@ -47,9 +47,9 @@ public class TusUploadService {
         headerWriteService.writeUploadOffset(video.getOffset());
         headerWriteService.writeNoStoreCacheControl();
 
-        if(video.getUploadLength() != null) {
-            headerWriteService.writeUploadLength(video.getUploadLength());
-            headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSizeOf(video.getUploadLength()));
+        if(video.getUploadSize() != null) {
+            headerWriteService.writeUploadLength(video.getUploadSize());
+            headerWriteService.writeMinChunkSize(multiPartUploaderService.minPartSizeOf(video.getUploadSize()));
         }
 
         log.info("video offset retrieved for id: {}, offset = {}", video.getId(), video.getOffset());
@@ -116,7 +116,7 @@ public class TusUploadService {
         try (InputStream inputStream = req.getInputStream()) {
             Video video = findVideoByIdOrThrow(videoId);
 
-            if(video.getUploadLength() > multiPartUploaderService.minPartSize()) {
+            if(video.getUploadSize() > multiPartUploaderService.minPartSize()) {
                 videoService.uploadPart(new UploadVideoPartInput(
                         videoId,
                         offset.get(),

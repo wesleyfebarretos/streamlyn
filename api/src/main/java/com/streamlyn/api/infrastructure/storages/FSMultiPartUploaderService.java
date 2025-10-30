@@ -68,7 +68,7 @@ public class FSMultiPartUploaderService extends AbstractMultiPartUploaderService
         long writtenBytes = 0L;
 
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpDir.resolve(filePath).toFile(), true))) {
-            byte[] buffer = new byte[10 * 1024 * 1024];
+            byte[] buffer = new byte[50 * 1024 * 1024];
             int bytesRead;
 
             while((bytesRead = is.readNBytes(buffer, 0, buffer.length)) > 0) {

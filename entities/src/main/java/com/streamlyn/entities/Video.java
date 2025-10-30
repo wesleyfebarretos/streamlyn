@@ -28,7 +28,7 @@ public class Video {
 
     private List<String> resolutions;
 
-    private Long uploadLength;
+    private Long uploadSize;
 
     private Long offset;
 

@@ -54,7 +54,7 @@ public class VideoService {
                 .fileName(videoInput.filename())
                 .tags(videoInput.tags())
                 .description(videoInput.description())
-                .uploadLength(videoInput.uploadLength())
+                .uploadSize(videoInput.uploadLength())
                 .metadata(videoInput.metadata())
                 .offset(0L)
                 .build();
@@ -80,10 +80,11 @@ public class VideoService {
         }
 
         validateUploadProgress(video);
+        validateChunkDoesNotExceedRemainingSpace(video, input.contentLength());
 
         if (isNotLastPartAndLessThanMinPartSize(video, input)) {
             throw ApiException.badRequest(
-                    String.format("Chunk size to small. The minimum Allowed for this upload is %d bytes, except the last one.", multiPartUploaderService.minPartSizeOf(video.getUploadLength()))
+                    String.format("Chunk size to small. The minimum Allowed for this upload is %d bytes, except the last one.", multiPartUploaderService.minPartSizeOf(video.getUploadSize()))
             );
         }
 
@@ -101,7 +102,7 @@ public class VideoService {
         } finally {
             video.setOffset(video.getOffset() + writtenBytes);
 
-            if (video.getOffset().equals(video.getUploadLength())) {
+            if (video.getOffset().equals(video.getUploadSize())) {
                 video.setFileUrl(multiPartUploaderService.complete(filePath));
                 log.info("Multi part upload completed for video {}. File URL -> {}", video.getId(), video.getFileUrl());
             }
@@ -109,23 +110,24 @@ public class VideoService {
             videoRepository.save(video);
         }
 
-        double progress = ((double) video.getOffset() / video.getUploadLength()) * 100;
+        double progress = ((double) video.getOffset() / video.getUploadSize()) * 100;
 
-        log.info("Uploaded new chunk for upload id {}: Progress={}%, Content Length={}, Current Offset={}, Upload Length={}",
-                video.getId(), String.format("%.2f", progress), input.contentLength(), video.getOffset(), video.getUploadLength());
+        log.info("Uploaded new chunk for upload id {}: Progress={}%, Content Length={}, Current Offset={}, Upload Size={}",
+                video.getId(), String.format("%.2f", progress), input.contentLength(), video.getOffset(), video.getUploadSize());
     }
 
     public void upload(@Valid UploadVideoInput input) {
         Video video = findByIdOrThrow(input.videoId());
 
         validateUploadProgress(video);
+        validateChunkDoesNotExceedRemainingSpace(video, input.contentLength());
 
-        if (video.getOffset() + input.contentLength() < video.getUploadLength()) {
+        if (video.getOffset() + input.contentLength() < video.getUploadSize()) {
             throw ApiException.badRequest(
-                String.format(
-                    "Upload payload too small: total video size is %d bytes, but the request only provided %d bytes.",
-                    video.getUploadLength(), input.contentLength()
-                )
+                    String.format(
+                            "Upload payload too small: total video size is %d bytes, but the request only provided %d bytes.",
+                            video.getUploadSize(), input.contentLength()
+                    )
             );
         }
 
@@ -134,11 +136,11 @@ public class VideoService {
         String filePath = String.format("%s%s", video.getId(), extension);
 
         video.setFileUrl(uploaderService.upload(filePath, input.data(), video.getMimeType()));
-        video.setOffset(video.getUploadLength());
+        video.setOffset(video.getUploadSize());
 
         videoRepository.save(video);
 
-        log.info("uploaded new video for upload id {}: Upload Length={}", video.getId(), video.getUploadLength());
+        log.info("uploaded new video for upload id {}: Upload Length={}", video.getId(), video.getUploadSize());
     }
 
     private Video findByIdOrThrow(String id) {
@@ -147,8 +149,17 @@ public class VideoService {
     }
 
     private void validateUploadProgress(Video video) {
-        if (video.getOffset().equals(video.getUploadLength())) {
+        if (video.getOffset().equals(video.getUploadSize())) {
             throw ApiException.conflict("The file has already been uploaded");
+        }
+    }
+
+    private void validateChunkDoesNotExceedRemainingSpace(Video video, long chunkSize) {
+        if (chunkSize > video.getUploadSize() - video.getOffset()) {
+            throw ApiException.payloadTooLarge(
+                    String.format("%d bytes are missing to complete the upload, but %d bytes have been received.",
+                            video.getUploadSize() - video.getOffset(), chunkSize)
+            );
         }
     }
 
@@ -163,7 +174,7 @@ public class VideoService {
     }
 
     private boolean isNotLastPartAndLessThanMinPartSize(Video video, UploadVideoPartInput input) {
-        return video.getOffset() + input.contentLength() < video.getUploadLength() &&
-                input.contentLength() < multiPartUploaderService.minPartSizeOf(video.getUploadLength());
+        return video.getOffset() + input.contentLength() < video.getUploadSize() &&
+                input.contentLength() < multiPartUploaderService.minPartSizeOf(video.getUploadSize());
     }
 }

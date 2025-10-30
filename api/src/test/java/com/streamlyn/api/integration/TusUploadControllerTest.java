@@ -127,7 +127,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
             videoService.startMultiPartUpload(video);
 
-            final int MIN_CHUNK_SIZE = multiPartUploaderService.minPartSizeOf(video.getUploadLength());
+            final int MIN_CHUNK_SIZE = multiPartUploaderService.minPartSizeOf(video.getUploadSize());
 
             long writtenBytes = 0;
             long offset = 0L;
@@ -146,10 +146,10 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
                 List<Video> videos = videoRepository.findAll();
 
-                assertThat(writtenBytes).isEqualTo(video.getUploadLength());
+                assertThat(writtenBytes).isEqualTo(video.getUploadSize());
                 assertThat(videos).size().isEqualTo(1);
                 assertThat(videos.getFirst().getFileUrl()).contains(videos.getFirst().getId());
-                assertThat(videos.getFirst().getOffset()).isEqualTo(video.getUploadLength());
+                assertThat(videos.getFirst().getOffset()).isEqualTo(video.getUploadSize());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -165,7 +165,7 @@ public class TusUploadControllerTest extends BaseIntegrationTest {
 
             assertThat(videos).size().isEqualTo(1);
 
-            final int MIN_CHUNK_SIZE = multiPartUploaderService.minPartSizeOf(video.getUploadLength());
+            final int MIN_CHUNK_SIZE = multiPartUploaderService.minPartSizeOf(video.getUploadSize());
 
             try(InputStream inputStream = getSampleVideoStream("/sample-video-10mb.mp4")) {
                 byte[] buffer = new byte[MIN_CHUNK_SIZE];
