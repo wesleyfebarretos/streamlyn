@@ -48,54 +48,42 @@ public class S3MultiPartUploaderService extends AbstractMultiPartUploaderService
     }
 
     @Override
-    public long uploadPart(String filePath, InputStream inputStream) throws MultiPartUploadException {
-        long writtenBytes = 0L;
-
+    public long uploadPart(String filePath, InputStream inputStream, long contentLength) throws MultiPartUploadException {
         try (InputStream is = inputStream) {
-            byte[] buffer = new byte[10 * 1024 * 1024];
-            int bytesRead;
-
             String uploadId = redisTemplate.opsForValue().get(UPLOAD_ID_KEY_PREFIX.concat(filePath));
+            Long partNumber = redisTemplate.opsForValue().increment(PART_NUMBER_KEY_PREFIX.concat(filePath));
 
-            while ((bytesRead = is.readNBytes(buffer, 0, buffer.length)) > 0) {
-                Long partNumber = redisTemplate.opsForValue().increment(PART_NUMBER_KEY_PREFIX.concat(filePath));
+            UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+                    .bucket(BUCKET)
+                    .key(filePath)
+                    .uploadId(uploadId)
+                    .partNumber(partNumber.intValue())
+                    .build();
 
-                UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
-                        .bucket(BUCKET)
-                        .key(filePath)
-                        .uploadId(uploadId)
-                        .partNumber(partNumber.intValue())
-                        .build();
+            UploadPartResponse partResponse = s3Client.uploadPart(
+                    uploadPartRequest,
+                    RequestBody.fromInputStream(is, contentLength));
 
-                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead);
+            CompletedPart completedPart = CompletedPart.builder()
+                    .partNumber(partNumber.intValue())
+                    .eTag(partResponse.eTag())
+                    .build();
 
-                UploadPartResponse partResponse = s3Client.uploadPart(
-                        uploadPartRequest,
-                        RequestBody.fromByteBuffer(byteBuffer));
+            Map<String, Object> part = Map.of(
+                    "partNumber", completedPart.partNumber(),
+                    "eTag", completedPart.eTag()
+            );
 
-                CompletedPart completedPart = CompletedPart.builder()
-                        .partNumber(partNumber.intValue())
-                        .eTag(partResponse.eTag())
-                        .build();
+            ObjectMapper mapper = new ObjectMapper();
 
-                Map<String, Object> part = Map.of(
-                        "partNumber", completedPart.partNumber(),
-                        "eTag", completedPart.eTag()
-                );
-
-                ObjectMapper mapper = new ObjectMapper();
-
-                redisTemplate.opsForList().rightPush(PARTS_KEY_PREFIX.concat(filePath), mapper.writeValueAsString(part));
-
-                writtenBytes += bytesRead;
-            }
+            redisTemplate.opsForList().rightPush(PARTS_KEY_PREFIX.concat(filePath), mapper.writeValueAsString(part));
         } catch ( JsonProcessingException e) {
             throw ApiException.internalServerError(e.getMessage());
         } catch (IOException e) {
-            throw new MultiPartUploadException("could not write all requested bytes", e, writtenBytes);
+            throw new MultiPartUploadException("could not write all requested bytes", e, 0);
         }
 
-        return writtenBytes;
+        return contentLength;
     }
 
     @Override

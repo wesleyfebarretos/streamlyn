@@ -94,7 +94,7 @@ public class VideoService {
         String filePath = String.format("%s%s", video.getId(), extension);
 
         try {
-            writtenBytes = multiPartUploaderService.uploadPart(filePath, input.data());
+            writtenBytes = multiPartUploaderService.uploadPart(filePath, input.data(), input.contentLength());
         } catch (MultiPartUploadException e) {
             writtenBytes = e.getWrittenBytes();
             throw ApiException.internalServerError(e.getMessage());
@@ -111,7 +111,7 @@ public class VideoService {
 
         double progress = ((double) video.getOffset() / video.getUploadLength()) * 100;
 
-        log.info("uploaded new chunk for upload id {}: Progress={}%, Content Length={}, Current Offset={}, Upload Length={}",
+        log.info("Uploaded new chunk for upload id {}: Progress={}%, Content Length={}, Current Offset={}, Upload Length={}",
                 video.getId(), String.format("%.2f", progress), input.contentLength(), video.getOffset(), video.getUploadLength());
     }
 
