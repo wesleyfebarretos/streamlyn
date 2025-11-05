@@ -105,4 +105,16 @@ services:
     environment:
       RI_REDIS_HOST: redis
 
+  rabbitmq:
+    image: rabbitmq:4.2.0-management-alpine
+    container_name: rabbitmq
+    networks:
+      - streamlyn
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: streamlyn
+      RABBITMQ_DEFAULT_PASS: streamlyn
+
 

@@ -5,6 +5,7 @@ import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.inputs.CreateVideoUploadInput;
 import com.streamlyn.api.domain.inputs.UploadVideoInput;
 import com.streamlyn.api.domain.inputs.UploadVideoPartInput;
+import com.streamlyn.api.domain.interfaces.MessageBrokerProducer;
 import com.streamlyn.api.domain.interfaces.ObjectStorageMultiPartUploaderService;
 import com.streamlyn.api.domain.interfaces.ObjectStorageUploaderService;
 import com.streamlyn.api.domain.repositories.VideoRepository;
@@ -33,6 +34,7 @@ public class VideoService {
 
     private final ObjectStorageMultiPartUploaderService multiPartUploaderService;
     private final ObjectStorageUploaderService uploaderService;
+    private final MessageBrokerProducer messageBrokerProducer;
 
     public List<Video> findALl() {
         return videoRepository.findAll();
@@ -102,11 +104,6 @@ public class VideoService {
         } finally {
             video.setOffset(video.getOffset() + writtenBytes);
 
-            if (video.getOffset().equals(video.getUploadSize())) {
-                video.setFileUrl(multiPartUploaderService.complete(filePath));
-                log.info("Multi part upload completed for video {}. File URL -> {}", video.getId(), video.getFileUrl());
-            }
-
             videoRepository.save(video);
         }
 
@@ -114,6 +111,13 @@ public class VideoService {
 
         log.info("Uploaded new chunk for upload id {}: Progress={}%, Content Length={}, Current Offset={}, Upload Size={}",
                 video.getId(), String.format("%.2f", progress), input.contentLength(), video.getOffset(), video.getUploadSize());
+
+        if (video.getOffset().equals(video.getUploadSize())) {
+            video.setFileUrl(multiPartUploaderService.complete(filePath));
+            videoRepository.save(video);
+            log.info("Multi part upload completed for video {}. File URL -> {}", video.getId(), video.getFileUrl());
+            messageBrokerProducer.publishVideoUploaded(video);
+        }
     }
 
     public void upload(@Valid UploadVideoInput input) {
@@ -139,6 +143,8 @@ public class VideoService {
         video.setOffset(video.getUploadSize());
 
         videoRepository.save(video);
+
+        messageBrokerProducer.publishVideoUploaded(video);
 
         log.info("uploaded new video for upload id {}: Upload Length={}", video.getId(), video.getUploadSize());
     }

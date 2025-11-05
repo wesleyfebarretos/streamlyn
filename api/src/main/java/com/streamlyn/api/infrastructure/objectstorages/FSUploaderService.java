@@ -1,10 +1,9 @@
-package com.streamlyn.api.infrastructure.storages;
+package com.streamlyn.api.infrastructure.objectstorages;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.interfaces.ObjectStorageUploaderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedOutputStream;

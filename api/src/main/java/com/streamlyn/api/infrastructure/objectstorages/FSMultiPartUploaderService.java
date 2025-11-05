@@ -1,4 +1,4 @@
-package com.streamlyn.api.infrastructure.storages;
+package com.streamlyn.api.infrastructure.objectstorages;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.exception.MultiPartUploadException;

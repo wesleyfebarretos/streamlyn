@@ -1,4 +1,4 @@
-package com.streamlyn.api.infrastructure.storages;
+package com.streamlyn.api.infrastructure.objectstorages;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +17,6 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 

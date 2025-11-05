@@ -1,4 +1,4 @@
-package com.streamlyn.api.infrastructure.storages;
+package com.streamlyn.api.infrastructure.objectstorages;
 
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.interfaces.ObjectStorageUploaderService;
@@ -12,13 +12,9 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.Buffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 @Component
 @Slf4j
@@ -58,11 +54,7 @@ public class S3UploaderService implements ObjectStorageUploaderService {
                             .build()
             );
 
-            String location = url.toString();
-
-            log.info("upload created with path: {}", location);
-
-            return location;
+            return url.toString();
         } catch (IOException e) {
             throw ApiException.internalServerError("Failed to create file: " + e.getMessage());
         }
