@@ -1,5 +1,6 @@
 package com.streamlyn.api.domain.services;
 
+import com.streamlyn.api.domain.events.VideoUploadedEvent;
 import com.streamlyn.api.domain.exception.ApiException;
 import com.streamlyn.api.domain.exception.MultiPartUploadException;
 import com.streamlyn.api.domain.inputs.CreateVideoUploadInput;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.ViewOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -116,7 +118,7 @@ public class VideoService {
             video.setFileUrl(multiPartUploaderService.complete(filePath));
             videoRepository.save(video);
             log.info("Multi part upload completed for video {}. File URL -> {}", video.getId(), video.getFileUrl());
-            messageBrokerProducer.publishVideoUploaded(video);
+            messageBrokerProducer.publishVideoUploaded(new VideoUploadedEvent(video.getFileUrl(), video.getId()));
         }
     }
 
@@ -144,7 +146,7 @@ public class VideoService {
 
         videoRepository.save(video);
 
-        messageBrokerProducer.publishVideoUploaded(video);
+        messageBrokerProducer.publishVideoUploaded(new VideoUploadedEvent(video.getFileUrl(), video.getId()));
 
         log.info("uploaded new video for upload id {}: Upload Length={}", video.getId(), video.getUploadSize());
     }

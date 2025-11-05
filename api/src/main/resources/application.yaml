@@ -20,6 +20,16 @@ spring:
       s3:
         bucket: ${OBJECT_STORAGE_BUCKET:streamlyn}
 
+  rabbitmq:
+    host: ${MESSAGE_BROKER_HOST:localhost}
+    port: ${MESSAGE_BROKER_PORT:5672}
+    username: ${MESSAGE_BROKER_USERNAME:streamlyn}
+    password: ${MESSAGE_BROKER_PASSWORD:streamlyn}
+    template:
+      retry:
+        enabled: true
+        initial-interval: "2s"
+
 app:
   url: ${APP_URL:http://localhost:8080}
 
