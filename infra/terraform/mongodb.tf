@@ -1,15 +1,15 @@
-resource "docker_volume" "mongo_data" {
+resource "docker_volume" "mongo" {
   driver = "local"
 }
 
-resource "docker_image" "mongodb_image" {
+resource "docker_image" "mongo" {
   name         = "mongo:8.0"
   keep_locally = true
 }
 
 resource "docker_container" "mongodb" {
   name  = "mongo"
-  image = docker_image.mongodb_image.image_id
+  image = docker_image.mongo.image_id
 
   ports {
     internal = 27017
@@ -23,7 +23,7 @@ resource "docker_container" "mongodb" {
   ]
 
   volumes {
-    volume_name    = docker_volume.mongo_data.name
+    volume_name    = docker_volume.mongo.name
     container_path = "/data/db"
   }
 
@@ -56,7 +56,7 @@ resource "docker_container" "mongodb" {
 
 resource "docker_container" "mongo_setup" {
   name  = "mongo_setup"
-  image = docker_image.mongodb_image.image_id
+  image = docker_image.mongo.image_id
 
   env = [
     "MONGO_INITDB_ROOT_USERNAME=admin",

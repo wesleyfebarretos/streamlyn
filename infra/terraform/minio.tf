@@ -1,14 +1,14 @@
-resource "docker_image" "minio_image" {
+resource "docker_image" "minio" {
   name         = "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1"
   keep_locally = true
 }
 
-resource "docker_volume" "minio_data" {
+resource "docker_volume" "minio" {
   driver = "local"
 }
 
 resource "docker_container" "minio" {
-  image = docker_image.minio_image.image_id
+  image = docker_image.minio.image_id
   name  = "minio"
 
   networks_advanced {
@@ -26,7 +26,7 @@ resource "docker_container" "minio" {
   }
 
   volumes {
-    volume_name    = docker_volume.minio_data.name
+    volume_name    = docker_volume.minio.name
     container_path = "/data"
   }
 
@@ -45,8 +45,8 @@ resource "docker_container" "minio" {
 }
 
 resource "docker_container" "minio_setup" {
-  name = "minio_setup"
-  image = docker_image.minio_image.image_id
+  name  = "minio_setup"
+  image = docker_image.minio.image_id
 
   depends_on = [docker_container.minio]
 
@@ -61,7 +61,7 @@ resource "docker_container" "minio_setup" {
     "-c",
     <<-EOF
       sleep 5;
-      /usr/bin/mc alias set dockerminio http://minio:9000 streamlyn streamlyn;
+      /usr/bin/mc alias set dockerminio http://${docker_container.minio.name}:9000 streamlyn streamlyn;
       /usr/bin/mc mb dockerminio/streamlyn;
       exit 0;
     EOF
